@@ -1,0 +1,10 @@
+# python cache and build
+__pycache__/
+ml.egg-info
+
+# notebook cache
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.vim/
