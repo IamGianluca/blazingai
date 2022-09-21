@@ -1,15 +1,22 @@
 from pathlib import Path
+from typing import Protocol, Type
 
-from kaggle import api
 from loguru import logger
 
 
-def download_comp_data(comp_name: str, path: Path, api=api) -> Path:
+class KaggleAPITemplate(Protocol):
+    def competition_download_cli(self, competition, path) -> None:
+        pass
+
+
+def download_comp_data(
+    comp_name: str, path: Path, api=Type[KaggleAPITemplate]
+) -> Path:
     """Download competition data from Kaggle, and save it to `path`
     destination.
 
     Args:
-        api: API client.
+        api: Kaggle API client.
         comp_name: Short name of Kaggle competition.
         path: Destination.
     """

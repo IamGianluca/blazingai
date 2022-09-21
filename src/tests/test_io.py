@@ -1,12 +1,10 @@
 import zipfile
 from pathlib import Path
 
-from kaggle.api import KaggleApi
-
 from ml.io import download_comp_data, extract_comp_data
 
 
-class FakeKaggleAPI(KaggleApi):
+class KaggleAPIFake:
     def __init__(self) -> None:
         pass
 
@@ -16,7 +14,7 @@ class FakeKaggleAPI(KaggleApi):
 
 def test_download_from_kaggle():
     result: Path = download_comp_data(
-        api=FakeKaggleAPI(), comp_name="test", path=Path("tmp")
+        api=KaggleAPIFake(), comp_name="test", path=Path("tmp")
     )
     assert result == Path("tmp/test.zip")
 
