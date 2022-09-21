@@ -2,24 +2,36 @@
 
 A framework to accellerate the development cycle for ML projects.
 
+This project leverage several other excellent libraries:
+
+* [pytorch](https://github.com/pytorch/pytorch)
+* [pytorch-lightning](https://github.com/Lightning-AI/lightning)
+* [scikit-learn](https://github.com/scikit-learn/scikit-learn)
+* [timm](https://github.com/rwightman/pytorch-image-models)
+* [torchmetrics](https://github.com/Lightning-AI/metrics)
+* [transformers](https://github.com/huggingface/transformers)
+
 ## Installation
 
-WIP
+The package is not yet published in pypi. We are considering doing that on a later stage, when the package is more mature.
 
 ## Contribute
 
-We can install the library using the `make install` command. This will install the `ml` library in editable mode.
+To contribute to the project, you can download the codebase and install the package in editable model with the following commands.
 
-It is also recommended to install the development dependencies with `pip install -r requirements-dev.txt` when contributing to project.
+```
+$ git clone git@github.com:IamGianluca/ml.git
+$ cd ml
+$ make install
+```
 
-#### Commit labels
+It is also recommended to also install the development dependencies with `pip install -r requirements-dev.txt`. This will allow you to run additional helper commands like `make test` and `make format`.
 
-When contributing to this repository, please consider using the following convention to label your commit messages.
+When contributing to this repository, please use the following convention to label your commit messages.
 
 * `BUG`: bug fixing
-* `DEV`: development environment ― e.g., Docker, TensorBoard, system dependencies
+* `DEV`: development environment ― e.g., system dependencies
 * `DOC`: documentation
-* `EDA`: exploratory data analysis
-* `ML`: modeling, feature engineering
+* `ENH`: model architectures, feature engineering
 * `MAINT`: maintenance ― e.g., refactoring
-* `OPS`: MLOps ― e.g., download, unzip, pre- and post-process data
+* `TST`: testing, continuous integration
