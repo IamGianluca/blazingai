@@ -1,9 +1,8 @@
 from pathlib import Path
 
 import pytest
-from pydicom import dcmread
-
 from ml.vision.convert import convert_dicom2jpg
+from pydicom import dcmread
 
 
 @pytest.fixture(scope="session")

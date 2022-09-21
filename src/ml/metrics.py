@@ -3,9 +3,7 @@ from typing import Any, Callable, Optional
 import torch
 import torchmetrics
 from torch import Tensor
-from torchmetrics.functional.regression.mean_squared_error import (
-    mean_squared_error,
-)
+from torchmetrics.functional.regression.mse import mean_squared_error
 from torchmetrics.metric import Metric
 
 
@@ -21,7 +19,16 @@ def metric_factory(cfg):
         raise ValueError("Metric not supported yet.")
 
 
+# TODO: check if new upstream implementation works
+# https://github.com/Lightning-AI/metrics/blob/master/src/torchmetrics/regression/mse.py#L23
 class RootMeanSquaredError(Metric):
+
+    is_differentiable: bool = True
+    higher_is_better: bool = False
+    full_state_update: bool = False
+    sum_squared_error: Tensor
+    total: Tensor
+
     def __init__(
         self,
         compute_on_step: bool = False,
@@ -37,7 +44,6 @@ class RootMeanSquaredError(Metric):
         )
         self.target = torch.empty(0).cuda()
         self.preds = torch.empty(0).cuda()
-        self.is_differentiable: bool = True
 
     def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore
         """Update state with predictions and targets.
