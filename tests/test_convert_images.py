@@ -2,15 +2,13 @@ from pathlib import Path
 
 import pytest
 from pydicom import dcmread
-from pydicom.data import get_testdata_file
 
 from ml.vision.convert import convert_dicom2jpg
 
 
 @pytest.fixture(scope="session")
 def dicom_file(tmpdir_factory):
-    p = Path(".")
-    p = p / "tests/data/1.dcm"
+    p = Path.cwd() / "tests/data/1.dcm"
     dcm = dcmread(p)
 
     fpath = tmpdir_factory.mktemp("data").join("test.dcm")
