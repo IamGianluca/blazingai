@@ -1,6 +1,5 @@
-from setuptools import setup
-
 import ml
+from setuptools import setup
 
 setup(
     name="ml",
