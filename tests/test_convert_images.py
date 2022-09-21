@@ -10,7 +10,7 @@ from ml.vision.convert import convert_dicom2jpg
 @pytest.fixture(scope="session")
 def dicom_file(tmpdir_factory):
     p = Path(".")
-    p = p / "src/tests/data/1.dcm"
+    p = p / "tests/data/1.dcm"
     dcm = dcmread(p)
 
     fpath = tmpdir_factory.mktemp("data").join("test.dcm")

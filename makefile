@@ -11,6 +11,6 @@ install:
 mypy:
 	mypy src/ --ignore-missing-imports
 
-tests:
-	pytest -s src/ && \
-	mypy src/ --ignore-missing-imports
+test:
+	pytest -s . && \
+	mypy . --ignore-missing-imports
