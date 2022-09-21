@@ -24,7 +24,10 @@ def plot_batches(dl: DataLoader, n_batches: int = 1):
             break
 
 
-def _show_images_in_batch(batch: Union[Tuple[torch.Tensor, List], torch.Tensor], verbose: bool = False):
+def _show_images_in_batch(
+    batch: Union[Tuple[torch.Tensor, List], torch.Tensor],
+    verbose: bool = False,
+):
     try:
         images, targets = batch
     except ValueError:

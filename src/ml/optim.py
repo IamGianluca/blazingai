@@ -1,10 +1,10 @@
 from typing import Iterable, Optional
 
 import torch
-from transformers.optimization import AdamW
 from torch import optim
 from torch.optim import lr_scheduler
 from torch.optim._multi_tensor import SGD
+from transformers.optimization import AdamW
 
 
 def optimizer_factory(params, hparams):

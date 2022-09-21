@@ -13,11 +13,9 @@ from tqdm import tqdm
 
 def convert_dicom2jpg(in_path: Path, out_path: Path) -> None:
     dirlist = list(in_path.iterdir())
-    dirlist = [
-            d for d in dirlist if d.is_dir()]
+    dirlist = [d for d in dirlist if d.is_dir()]
     if dirlist:
-        _parallel_by_dir(
-                dirs=dirlist, in_path=in_path, out_path=out_path)
+        _parallel_by_dir(dirs=dirlist, in_path=in_path, out_path=out_path)
     else:
         _parallel_by_file(in_path=in_path, out_path=out_path)
 
