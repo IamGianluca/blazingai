@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "blazingml"
+name = "blazingai"
 version = "2.0.0"
-description = "Personal ML library"
+description = "A framework to accelerate AI development."
 license = "MIT"
 authors = ["Gianluca Rossi <gr.gianlucarossi@gmail.com>"]
 maintainers = ["Gianluca Rossi <gr.gianlucarossi@gmail.com>"]
 readme = "README.md"
-packages = [{include = "blazingml"}]
+packages = [{include = "blazingai"}]
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.12"

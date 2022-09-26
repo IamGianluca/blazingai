@@ -1,7 +1,7 @@
 import zipfile
 from pathlib import Path
 
-from blazingml.io import download_comp_data, extract_comp_data
+from blazingai.io import download_comp_data, extract_comp_data
 
 
 class KaggleAPIFake:

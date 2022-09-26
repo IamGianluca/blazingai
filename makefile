@@ -3,10 +3,7 @@ format:
 	black -l 79 .
 
 install:
-	rm -rf src/ml.egg-info/ && \
-	cd src && \
-	pip install -e . && \
-	cd ..
+	pip install -e .
 
 mypy:
 	mypy src/ --ignore-missing-imports
