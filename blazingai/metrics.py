@@ -10,7 +10,10 @@ from torchmetrics.metric import Metric
 def metric_factory(cfg):
     if cfg.metric == "auc":
         # return torchmetrics.AUROC(pos_label=1)
-        return torchmetrics.AUROC(pos_label=1, num_classes=cfg.num_classes)
+        return torchmetrics.AUROC(
+            pos_label=1,
+            num_classes=cfg.num_classes,
+        )
     elif cfg.metric == "mse":
         return torchmetrics.MeanSquaredError(squared=True)
     elif cfg.metric == "rmse":
@@ -64,4 +67,8 @@ class RootMeanSquaredError(Metric):
         self.preds = torch.empty(0).cuda()
         self.target = torch.empty(0).cuda()
 
-        return mean_squared_error(preds=preds, target=target, squared=False)
+        return mean_squared_error(
+            preds=preds,
+            target=target,
+            squared=False,
+        )

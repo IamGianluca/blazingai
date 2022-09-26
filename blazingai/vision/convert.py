@@ -4,7 +4,7 @@ from typing import List
 
 import numpy as np
 import pydicom
-from joblib import Parallel, delayed
+from joblib import delayed, Parallel
 from loguru import logger
 from PIL import Image
 from pydicom.pixel_data_handlers.util import apply_voi_lut
