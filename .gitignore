@@ -1,6 +1,7 @@
 # python cache and build
 __pycache__/
 ml.egg-info
+dist/
 
 # notebook cache
 .ipynb_checkpoints/
@@ -8,3 +9,5 @@ ml.egg-info
 # IDE
 .vscode/
 .vim/
+
+

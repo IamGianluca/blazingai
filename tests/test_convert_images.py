@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-from ml.vision.convert import convert_dicom2jpg
+from blazingml.vision.convert import convert_dicom2jpg
 from pydicom import dcmread
 
 
