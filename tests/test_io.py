@@ -1,44 +1,27 @@
-import zipfile
-from pathlib import Path
-
-from blazingai.io import download_comp_data, extract_comp_data
+import numpy as np
+from blazingai.io import save_metrics, save_predictions
 
 
-class KaggleAPIFake:
-    def __init__(self) -> None:
-        pass
-
-    def competition_download_cli(self, competition, path) -> None:
-        pass
-
-
-def test_download_from_kaggle():
-    result: Path = download_comp_data(
-        api=KaggleAPIFake(), comp_name="test", path=Path("tmp")
+def test_save_metrics(tmp_path):
+    fpath = tmp_path / "model_one.score"
+    save_metrics(
+        fpath=fpath,
+        metric="rmse",
+        train_metric=0.10,
+        cv_metric=0.05,
+        oof_metric=0.07,
     )
-    assert result == Path("tmp/test.zip")
+    with open(fpath) as f:
+        assert (
+            f.readline()
+            == '{"train rmse": 0.1, "cv rmse": 0.05, "oof rmse": 0.07}'
+        )
 
 
-def test_extract_comp_data(tmp_path):
-    # create empty folder
-    p: Path = tmp_path / "sub"
-    p.mkdir()
+def test_save_predictions(tmp_path):
+    fpath = tmp_path / "model_weights.npy"
+    preds = [1, 2, 3, 4, 5, 6]
+    save_predictions(fpath=fpath, preds=preds)
 
-    assert len(list(p.iterdir())) == 0
-
-    # create one file
-    fname: Path = p / "file.txt"
-    fname.write_text("content")
-
-    assert len(list(p.iterdir())) == 1
-
-    # create zip archive
-    with zipfile.ZipFile(p / "file.zip", "w") as zf:
-        zf.write(fname)
-
-    assert len(list(p.iterdir())) == 2
-
-    # extract zip archive
-    extract_comp_data(fname=p / "file.zip", path=p / "plus.txt")
-
-    assert len(list(p.iterdir())) == 3
+    result = np.load(fpath)
+    np.testing.assert_array_almost_equal(result, np.array(preds))
