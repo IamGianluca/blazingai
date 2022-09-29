@@ -1,5 +1,5 @@
 format:
-	isort . && \
+	usort format . && \
 	black -l 79 .
 
 install:
