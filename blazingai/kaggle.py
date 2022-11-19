@@ -10,7 +10,7 @@ class KaggleAPITemplate(Protocol):
 
 
 def download_comp_data(
-    comp_name: str, path: Path, api=Type[KaggleAPITemplate]
+    comp_name: str, path: Path, api:Type[KaggleAPITemplate]
 ) -> Path:
     """Download competition data from Kaggle, and save it to `path`
     destination.
