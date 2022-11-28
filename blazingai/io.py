@@ -5,21 +5,21 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 
-def save_predictions(fpath: Path, preds: ArrayLike) -> None:
-    preds = np.array(preds)
-    np.save(fpath, preds)
+def save_pred(fpath: Path, pred: ArrayLike) -> None:
+    pred = np.array(pred)
+    np.save(fpath, pred)
 
 
 def save_metrics(
     fpath: Path,
     metric: str,
-    train_metric: float,
-    cv_metric: float,
+    trn_metric: float,
+    val_metric: float,
     oof_metric: float,
 ) -> None:
     data = {}
-    data[f"train {metric}"] = round(train_metric, 4)
-    data[f"cv {metric}"] = round(cv_metric, 4)
+    data[f"train {metric}"] = round(trn_metric, 4)
+    data[f"cv {metric}"] = round(val_metric, 4)
     data[f"oof {metric}"] = round(oof_metric, 4)
     with open(fpath, "w") as f:
         json.dump(data, f)

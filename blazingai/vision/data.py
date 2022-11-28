@@ -18,67 +18,67 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 class ImageClassificationDataset(Dataset):
     def __init__(
         self,
-        image_paths: List[Path],
-        augmentations: Compose,
-        targets: Optional[List] = None,
+        img_paths: List[Path],
+        aug: Compose,
+        trgt: Optional[List] = None,
     ) -> None:
-        self.image_paths = image_paths
-        self.targets = targets
-        self.augmentations = augmentations
-        self.length = len(image_paths)
+        self.img_paths = img_paths
+        self.trgt = trgt
+        self.aug = aug
+        self.length = len(img_paths)
 
     def __len__(self) -> int:
         return self.length
 
-    def __getitem__(self, index):
-        image = Image.open(self.image_paths[index]).convert("RGB")
-        image = self.augmentations(image)
+    def __getitem__(self, idx):
+        img = Image.open(self.img_paths[idx]).convert("RGB")
+        img = self.aug(img)
 
-        if self.targets is not None:  # train/val dataset
-            return image, torch.tensor(self.targets[index])
+        if self.trgt is not None:  # train/val dataset
+            return img, torch.tensor(self.trgt[idx])
         else:  # test dataset
-            return image
+            return img
 
 
 class Image3DClassificationDataset(Dataset):
     def __init__(
         self,
-        image_paths: List[Path],
-        augmentations: Compose,
-        targets: Optional[List] = None,
+        img_paths: List[Path],
+        aug: Compose,
+        trgt: Optional[List] = None,
     ) -> None:
-        self.image_paths = image_paths
-        self.targets = targets
-        self.augmentations = augmentations  # TODO: fix, not used yet
-        self.length = len(image_paths)
+        self.img_paths = img_paths
+        self.trgt = trgt
+        self.aug = aug  # TODO: fix, not used yet
+        self.length = len(img_paths)
 
     def __len__(self) -> int:
         return self.length
 
-    def __getitem__(self, index):
+    def __getitem__(self, idx):
         # for 3D images we load each individual frame as a numpy array,
         # then use Spline Interpolated Zoom (SIZ) to standardize the output
         # volume's shape
         fpaths = sorted(
-            list(Path(self.image_paths[index]).iterdir()),
+            list(Path(self.img_paths[idx]).iterdir()),
             key=lambda x: int(re.findall(r"\d+", x.name)[0]),
         )
         # TODO: make a transform for this
-        images = [np.array(Image.open(fpath)) for fpath in fpaths]
-        image = np.stack(images, axis=0)
-        image = spline_interpolated_zoom(image, desired_depth=15)
+        img_list = [np.array(Image.open(fpath)) for fpath in fpaths]
+        img = np.stack(img_list, axis=0)
+        img = spline_interpolated_zoom(img, desired_depth=15)
         # TODO: use timm's ToTensor
-        image = torch.tensor(image).float()
+        img = torch.tensor(img).float()
 
         # if self.augmentations:
         #     image = self.augmentations(image=image)["image"]
         # if image.ndim == 2:  # add channel axis to grayscale images
         #     image = image[None, ...]
 
-        if self.targets is not None:  # train/val dataset
-            return image, torch.tensor(self.targets[index])
+        if self.trgt is not None:  # train/val dataset
+            return img, torch.tensor(self.trgt[idx])
         else:  # test dataset
-            return image
+            return img
 
 
 def spline_interpolated_zoom(img, desired_depth: int = 3):
@@ -95,35 +95,33 @@ def spline_interpolated_zoom(img, desired_depth: int = 3):
 class ObjectDetectionDataset(Dataset):
     def __init__(
         self,
-        image_paths: List[Path],
-        augmentations: Compose,
-        targets: Optional[List[Dict[str, Any]]] = None,
+        img_paths: List[Path],
+        aug: Compose,
+        trgt: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
-        self.image_paths = image_paths
-        self.targets = targets
-        self.augmentations = augmentations
-        self.length = len(image_paths)
+        self.img_paths = img_paths
+        self.trgt = trgt
+        self.aug = aug
+        self.length = len(img_paths)
 
     def __len__(self) -> int:
         return self.length
 
-    def __getitem__(self, index):
-        image = np.array(Image.open(self.image_paths[index]).convert("RGB"))
+    def __getitem__(self, idx):
+        img = np.array(Image.open(self.img_paths[idx]).convert("RGB"))
 
-        if self.targets:
+        if self.trgt:
             # TODO: move this 'multiplication to utils.get_targets()
-            boxes = self.targets[index]["boxes"]
-            labels = [self.targets[index]["labels"]] * boxes.shape[0]
+            boxes = self.trgt[idx]["boxes"]
+            labels = [self.trgt[idx]["labels"]] * boxes.shape[0]
         else:
             boxes, labels = None, None
 
         # TODO: we should always apply the augmentations, they are not optional.
         # TODO: use timm for data augmentations
-        if self.augmentations:
-            transformed = self.augmentations(
-                image=image, bboxes=boxes, labels=labels
-            )
-            image = transformed["image"]
+        if self.aug:
+            transformed = self.aug(image=img, bboxes=boxes, labels=labels)
+            img = transformed["image"]
             boxes = transformed["bboxes"]
 
         # after applying data augmentation, boxes for only background
@@ -131,76 +129,74 @@ class ObjectDetectionDataset(Dataset):
         if labels == [0]:
             boxes = [[0, 0, 1, 1]]
 
-        image = torch.tensor(image).float().permute(2, 0, 1) / 255.0
+        img = torch.tensor(img).float().permute(2, 0, 1) / 255.0
 
-        if self.targets:  # train/val dataset
+        if self.trgt:  # train/val dataset
             target = {
-                "boxes": torch.tensor(boxes, dtype=torch.float32).reshape(
-                    -1, 4
-                ),
+                "boxes": torch.tensor(boxes, dtype=torch.float32).reshape(-1, 4),
                 "labels": torch.tensor(labels, dtype=torch.long),
             }
-            return image, target
+            return img, target
         else:  # test dataset
-            return image
+            return img
 
 
 class ImageDataModule(pl.LightningDataModule):
     def __init__(
         self,
         task: str,
-        batch_size: int,
-        train_image_paths: Optional[List[Path]] = None,
-        val_image_paths: Optional[List[Path]] = None,
-        test_image_paths: Optional[List[Path]] = None,
-        train_targets: Optional[List] = None,
-        val_targets: Optional[List] = None,
-        train_augmentations: Optional[Compose] = None,
-        val_augmentations: Optional[Compose] = None,
-        test_augmentations: Optional[Compose] = None,
+        bs: int,
+        trn_img_paths: Optional[List[Path]] = None,
+        val_img_paths: Optional[List[Path]] = None,
+        tst_img_paths: Optional[List[Path]] = None,
+        trn_trgt: Optional[List] = None,
+        val_trgt: Optional[List] = None,
+        trn_aug: Optional[Compose] = None,
+        val_aug: Optional[Compose] = None,
+        tst_aug: Optional[Compose] = None,
     ):
         super().__init__()
 
         self.task = task
-        self.train_image_paths = train_image_paths
-        self.val_image_paths = val_image_paths
-        self.test_image_paths = test_image_paths
+        self.trn_img_paths = trn_img_paths
+        self.val_img_paths = val_img_paths
+        self.tst_img_paths = tst_img_paths
 
-        self.train_targets = train_targets
-        self.val_targets = val_targets
+        self.trn_trgt = trn_trgt
+        self.val_trgt = val_trgt
 
-        self.train_augmentations = train_augmentations
-        self.val_augmentations = val_augmentations
-        self.test_augmentations = test_augmentations
+        self.trn_aug = trn_aug
+        self.val_aug = val_aug
+        self.tst_aug = tst_aug
 
-        self.batch_size = batch_size
+        self.bs = bs
 
     def setup(self, stage: Optional[str] = None) -> None:
         if stage:
             print(stage)
-        if self.train_image_paths:
-            self.train_ds = get_dataset[self.task](
-                image_paths=self.train_image_paths,
-                targets=self.train_targets,
-                augmentations=self.train_augmentations,
+        if self.trn_img_paths:
+            self.trn_ds = get_dataset[self.task](
+                img_paths=self.trn_img_paths,
+                trgt=self.trn_trgt,
+                aug=self.trn_aug,
             )
-        if self.val_image_paths:
+        if self.val_img_paths:
             self.val_ds = get_dataset[self.task](
-                image_paths=self.val_image_paths,
-                targets=self.val_targets,
-                augmentations=self.val_augmentations,
+                img_paths=self.val_img_paths,
+                trgt=self.val_trgt,
+                aug=self.val_aug,
             )
-        if self.test_image_paths:
+        if self.tst_img_paths:
             self.test_ds = get_dataset[self.task](
-                image_paths=self.test_image_paths,
-                targets=None,
-                augmentations=self.test_augmentations,
+                img_paths=self.tst_img_paths,
+                trgt=None,
+                aug=self.tst_aug,
             )
 
     def train_dataloader(self):
         return DataLoader(
-            self.train_ds,
-            batch_size=self.batch_size,
+            self.trn_ds,
+            batch_size=self.bs,
             shuffle=True,
             num_workers=12,
             pin_memory=True,
@@ -211,7 +207,7 @@ class ImageDataModule(pl.LightningDataModule):
     def val_dataloader(self):
         return DataLoader(
             self.val_ds,
-            batch_size=self.batch_size,
+            batch_size=self.bs,
             shuffle=False,
             num_workers=12,
             drop_last=False,
@@ -221,7 +217,7 @@ class ImageDataModule(pl.LightningDataModule):
     def test_dataloader(self):
         return DataLoader(
             self.test_ds,
-            batch_size=self.batch_size,
+            batch_size=self.bs,
             shuffle=False,
             num_workers=12,
             drop_last=False,
