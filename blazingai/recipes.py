@@ -1,104 +1,93 @@
-from pathlib import Path
+import os
 from typing import Tuple
 
 import numpy as np
 import pandas as pd
 import pytorch_lightning as pl
 import torch
+import utils
+from blazingai import learner
+from blazingai.io import save_metrics, save_pred
+
+from blazingai.metrics import metric_factory
+from blazingai.vision import data
+from lightning_lite.utilities.seed import seed_everything
 from omegaconf import OmegaConf
+
 from omegaconf.omegaconf import OmegaConf
 from pytorch_lightning import callbacks
 from pytorch_lightning.callbacks import lr_monitor
-from pytorch_lightning.loggers.logger import Logger
 from pytorch_lightning.loggers.wandb import WandbLogger
-from pytorch_lightning.utilities import seed
 from timm.data import transforms_factory
-from torchmetrics.regression.mse import MeanSquaredError
-
-from .io import save_metrics, save_predictions
-from .learner import ImageClassifier
-from .vision import data
 
 
 def train(cfg: OmegaConf, constants):
+    """Generic scaffolding to train a ML model. Nothing in this function should
+    change, irrespectly from the ML task -- NLP, CV, etc."""
     print(OmegaConf.to_yaml(cfg))
 
-    seed.seed_everything(seed=cfg.seed, workers=False)
+    seed_everything(seed=cfg.seed, workers=False)
 
-    wandb_logger = WandbLogger(
-        project="paw",
-    )
+    logger = WandbLogger(project=os.environ["COMPETITION_SHORT_NAME"])
 
-    is_crossvalidation = True if cfg.fold == -1 else False
-    if is_crossvalidation:
-        y_true = []
-        y_pred = []
-        valid_scores = []
-        train_scores = []
+    is_xval = True if cfg.fold == -1 else False
+    if is_xval:
+        all_trgt, all_pred, all_val_scores, all_trn_scores = [], [], [], []
 
         for current_fold in range(cfg.n_folds):
+            # NOTE: reassigning value to existing member
             cfg.fold = current_fold
-            train_score, valid_score, target, preds = train_one_fold(
-                cfg=cfg, logger=wandb_logger
-            )
-            y_true.extend(target)
-            y_pred.extend(preds)
-            valid_scores.append(valid_score)
-            train_scores.append(train_score)
+
+            trn_score, val_score, trgt, pred = train_one_fold(cfg=cfg, logger=logger)
+            all_trgt.extend(trgt)
+            all_pred.extend(pred)
+            all_val_scores.append(val_score)
+            all_trn_scores.append(trn_score)
 
         # needed for final ensemble
-        metrics_path = Path(f"preds/model_{cfg.name}_oof.npy")
-        save_predictions(fpath=metrics_path, preds=y_pred)
+        save_pred(fpath=f"preds/model_{cfg.name}_oof.npy", preds=all_pred)
 
-        train_metric = float(np.mean(train_scores))
-        val_metric = float(np.mean(valid_scores))
+        trn_metric = np.mean(all_trn_scores)
+        val_metric = np.mean(all_val_scores)
+        oof_metric = compute_oof_metric(cfg=cfg, y_pred=all_pred, y_true=all_trgt)
 
-        rmse = MeanSquaredError(squared=False)
-        y_pred = torch.tensor(y_pred)
-        y_true = torch.tensor(y_true)
-        oof_metric = float(rmse(y_pred, y_true))
-    else:
-        train_metric, val_metric = train_one_fold(cfg=cfg, logger=wandb_logger)
-
-    if is_crossvalidation:
-        fpath = constants.metrics_path / f"model_{cfg.name}.json"
         save_metrics(
-            fpath=fpath,
+            fpath=constants.metrics_path / f"model_{cfg.name}.json",
             metric=cfg.metric,
-            train_metric=train_metric,
-            cv_metric=val_metric,
+            trn_metric=trn_metric,
+            val_metric=val_metric,
             oof_metric=oof_metric,
         )
-        wandb_logger.log_metrics({"cv_train_metric": train_metric})
-        wandb_logger.log_metrics({"cv_val_metric": val_metric})
-        wandb_logger.log_metrics({"oof_val_metric": oof_metric})
+        logger.log_metrics({"cv_train_metric": trn_metric})
+        logger.log_metrics({"cv_val_metric": val_metric})
+        logger.log_metrics({"oof_val_metric": oof_metric})
+    else:
+        trn_metric, val_metric = train_one_fold(cfg=cfg, logger=logger)
 
 
-def train_one_fold(cfg: OmegaConf, logger: Logger, constants) -> Tuple:
+def compute_oof_metric(cfg: OmegaConf, y_true, y_pred) -> float:
+    metric = metric_factory(cfg)
+    y_pred = torch.tensor(y_pred)
+    y_true = torch.tensor(y_true)
+    return metric(y_pred, y_true)
 
+
+def train_one_fold(cfg: OmegaConf, logger, constants) -> Tuple:
     print()
     print(f"#####################")
     print(f"# FOLD {cfg.fold}")
     print(f"#####################")
 
     # get image paths and targets
-    df = pd.read_csv(constants.train_folds_fpath)
+    df = pd.read_csv(constants.train_folds_all_fpath)
     df_train = df[df.kfold != cfg.fold].reset_index()
     df_val = df[df.kfold == cfg.fold].reset_index()
 
-    train_image_paths, train_targets = utils.get_image_paths_and_targets(
-        df=df_train,
-        cfg=cfg,
-        ignore=True,
-    )
-    val_image_paths, val_targets = utils.get_image_paths_and_targets(
-        df=df_val,
-        cfg=cfg,
-        ignore=False,
-    )
+    trn_img_paths, trn_targets = utils.get_image_paths_and_targets(df=df_train, cfg=cfg)
+    val_img_paths, val_targets = utils.get_image_paths_and_targets(df=df_val, cfg=cfg)
 
     # define augmentations
-    train_aug = transforms_factory.create_transform(
+    trn_aug = transforms_factory.create_transform(
         input_size=cfg.sz,
         is_training=True,
         auto_augment=f"rand-n{cfg.n_tfms}-m{cfg.magn}",
@@ -111,21 +100,18 @@ def train_one_fold(cfg: OmegaConf, logger: Logger, constants) -> Tuple:
     # create datamodule
     dm = data.ImageDataModule(
         task="classification",
-        batch_size=cfg.bs,
-        # train
-        train_image_paths=train_image_paths,
-        train_targets=train_targets,
-        train_augmentations=train_aug,
-        # valid
-        val_image_paths=val_image_paths,
-        val_targets=val_targets,
-        val_augmentations=val_aug,
-        # test
-        test_image_paths=val_image_paths,
-        test_augmentations=val_aug,
+        bs=cfg.bs,
+        trn_img_paths=trn_img_paths,
+        val_img_paths=val_img_paths,
+        tst_img_paths=val_img_paths,
+        trn_trgt=trn_targets,
+        val_trgt=val_targets,
+        trn_aug=trn_aug,
+        val_aug=val_aug,
+        tst_aug=val_aug,
     )
 
-    model = ImageClassifier(
+    model = learner.ImageClassifier(
         in_channels=3,
         num_classes=1,
         pretrained=cfg.pretrained,
@@ -160,7 +146,7 @@ def train_one_fold(cfg: OmegaConf, logger: Logger, constants) -> Tuple:
         trainer.tune(model, dm)
 
     trainer.fit(model, dm)
-    targets_list = df_val.loc[:, "Pawpularity"].values.tolist()
+    targets_list = df_val.loc[:, "Pawpularity"].values.tolist()  # TODO: generalize
     preds = trainer.predict(model, dm.test_dataloader(), ckpt_path="best")
     preds_list = [p[0] * 100 for b in preds for p in b]
 
@@ -173,9 +159,5 @@ def train_one_fold(cfg: OmegaConf, logger: Logger, constants) -> Tuple:
     )
 
 
-def print_metrics(
-    metric: str, train_metric: float, valid_metric: float
-) -> None:
-    print(
-        f"\nBest {metric}: Train {train_metric:.4f}, Valid: {valid_metric:.4f}"
-    )
+def print_metrics(metric: str, trn_metric: float, val_metric: float) -> None:
+    print(f"\nBest {metric}: Train {trn_metric:.4f}, Valid: {val_metric:.4f}")
