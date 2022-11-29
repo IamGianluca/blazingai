@@ -12,7 +12,7 @@ from blazingai.io import save_metrics, save_pred
 from blazingai.metrics import metric_factory
 from blazingai.vision import data
 from lightning_lite.utilities.seed import seed_everything
-from omegaconf import OmegaConf
+from omegaconf import DictConfig, OmegaConf
 
 from omegaconf.omegaconf import OmegaConf
 from pytorch_lightning import callbacks
@@ -65,7 +65,7 @@ def train(cfg: OmegaConf, constants):
         trn_metric, val_metric = train_one_fold(cfg=cfg, logger=logger)
 
 
-def compute_oof_metric(cfg: OmegaConf, y_true, y_pred) -> float:
+def compute_oof_metric(cfg: DictConfig, y_true, y_pred) -> float:
     metric = metric_factory(cfg)
     y_pred = torch.tensor(y_pred)
     y_true = torch.tensor(y_true)
