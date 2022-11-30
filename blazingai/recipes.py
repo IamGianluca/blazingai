@@ -1,89 +1,68 @@
-import os
+from pathlib import Path
+from types import ModuleType
 from typing import Tuple
 
-import numpy as np
+import lightning as pl
 import pandas as pd
-import pytorch_lightning as pl
-import torch
-import utils
 from blazingai import learner
-from blazingai.io import save_metrics, save_pred
-
-from blazingai.metrics import metric_factory
+from blazingai.io import save_mtrc, save_pred
+from blazingai.metrics import CrossValMetrics
 from blazingai.vision import data
-from lightning_lite.utilities.seed import seed_everything
+from lightning.lite.utilities.seed import seed_everything
+from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig, OmegaConf
-
-from omegaconf.omegaconf import OmegaConf
-from pytorch_lightning import callbacks
-from pytorch_lightning.callbacks import lr_monitor
-from pytorch_lightning.loggers.wandb import WandbLogger
 from timm.data import transforms_factory
 
 
-def train(cfg: OmegaConf, constants):
+# TODO: use protocol instead of ModuleType so that we can use a fake module when
+# unit testing
+def train(cfg: DictConfig, logger: Logger, const: ModuleType, train_routine):
     """Generic scaffolding to train a ML model. Nothing in this function should
-    change, irrespectly from the ML task -- NLP, CV, etc."""
+    change, irrespectively from the ML task -- NLP, CV, etc."""
     print(OmegaConf.to_yaml(cfg))
 
-    seed_everything(seed=cfg.seed, workers=False)
+    seed_everything(seed=cfg.seed, workers=True)
 
-    logger = WandbLogger(project=os.environ["COMPETITION_SHORT_NAME"])
-
-    is_xval = True if cfg.fold == -1 else False
-    if is_xval:
-        all_trgt, all_pred, all_val_scores, all_trn_scores = [], [], [], []
+    if is_crossval(cfg=cfg):
+        metrics = CrossValMetrics(cfg=cfg)
 
         for current_fold in range(cfg.n_folds):
-            # NOTE: reassigning value to existing member
-            cfg.fold = current_fold
+            cfg.fold = current_fold  # NOTE: reassigning value to existing member
 
-            trn_score, val_score, trgt, pred = train_one_fold(cfg=cfg, logger=logger)
-            all_trgt.extend(trgt)
-            all_pred.extend(pred)
-            all_val_scores.append(val_score)
-            all_trn_scores.append(trn_score)
+            trn_score, val_score, trgt, pred = train_routine(cfg=cfg, logger=logger)
+            metrics.add(trgt=trgt, pred=pred, val_score=val_score, trn_score=trn_score)
 
         # needed for final ensemble
-        save_pred(fpath=f"preds/model_{cfg.name}_oof.npy", preds=all_pred)
-
-        trn_metric = np.mean(all_trn_scores)
-        val_metric = np.mean(all_val_scores)
-        oof_metric = compute_oof_metric(cfg=cfg, y_pred=all_pred, y_true=all_trgt)
-
-        save_metrics(
-            fpath=constants.metrics_path / f"model_{cfg.name}.json",
-            metric=cfg.metric,
-            trn_metric=trn_metric,
-            val_metric=val_metric,
-            oof_metric=oof_metric,
-        )
-        logger.log_metrics({"cv_train_metric": trn_metric})
-        logger.log_metrics({"cv_val_metric": val_metric})
-        logger.log_metrics({"oof_val_metric": oof_metric})
+        # TODO: do not access _pred
+        save_pred(fpath=Path(f"preds/model_{cfg.name}_oof.npy"), pred=metrics._pred)
+        save_mtrc(fpath=const.metrics_path / f"model_{cfg.name}.json", metrics=metrics)
+        log_mtrc(logger=logger, metrics=metrics)
     else:
-        trn_metric, val_metric = train_one_fold(cfg=cfg, logger=logger)
+        train_routine(cfg=cfg, logger=logger)
 
 
-def compute_oof_metric(cfg: DictConfig, y_true, y_pred) -> float:
-    metric = metric_factory(cfg)
-    y_pred = torch.tensor(y_pred)
-    y_true = torch.tensor(y_true)
-    return metric(y_pred, y_true)
+def log_mtrc(logger: Logger, metrics: CrossValMetrics) -> None:
+    logger.log_metrics({"cv_trn_metric": metrics.trn_metric})
+    logger.log_metrics({"cv_val_metric": metrics.val_metric})
+    logger.log_metrics({"oof_val_metric": metrics.oof_metric})
 
 
-def train_one_fold(cfg: OmegaConf, logger, constants) -> Tuple:
+def is_crossval(cfg: DictConfig) -> bool:
+    return True if cfg.fold == -1 else False
+
+
+def train_one_fold_computer_vision(cfg: DictConfig, logger, const, utils) -> Tuple:
     print()
     print(f"#####################")
     print(f"# FOLD {cfg.fold}")
     print(f"#####################")
 
     # get image paths and targets
-    df = pd.read_csv(constants.train_folds_all_fpath)
-    df_train = df[df.kfold != cfg.fold].reset_index()
+    df = pd.read_csv(const.train_folds_all_fpath)
+    df_trn = df[df.kfold != cfg.fold].reset_index()
     df_val = df[df.kfold == cfg.fold].reset_index()
 
-    trn_img_paths, trn_targets = utils.get_image_paths_and_targets(df=df_train, cfg=cfg)
+    trn_img_paths, trn_targets = utils.get_image_paths_and_targets(df=df_trn, cfg=cfg)
     val_img_paths, val_targets = utils.get_image_paths_and_targets(df=df_val, cfg=cfg)
 
     # define augmentations
@@ -121,7 +100,7 @@ def train_one_fold(cfg: OmegaConf, logger, constants) -> Tuple:
     checkpoint_callback = callbacks.ModelCheckpoint(
         monitor="val_metric",
         mode=cfg.metric_mode,
-        dirpath=constants.ckpts_path,
+        dirpath=const.ckpts_path,
         filename=f"model_{cfg.name}_fold{cfg.fold}",
         save_weights_only=True,
     )

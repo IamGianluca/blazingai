@@ -2,8 +2,9 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import lightning as pl
+
 import numpy as np
-import pytorch_lightning as pl
 import torch
 from PIL import Image, ImageFile
 from scipy.ndimage import zoom

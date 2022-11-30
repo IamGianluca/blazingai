@@ -1,8 +1,8 @@
 from typing import Any, List, Optional
 
-import pytorch_lightning as pl
+import lightning as pl
 import timm
-from omegaconf import OmegaConf
+from omegaconf import DictConfig
 from torch import nn
 
 from .loss import loss_factory
@@ -15,7 +15,7 @@ class ImageClassifier(pl.LightningModule):
         self,
         in_channels: int,
         num_classes: int,
-        cfg: OmegaConf,
+        cfg: DictConfig,
         pretrained: bool = False,
     ) -> None:
         super().__init__()
@@ -100,9 +100,7 @@ class ImageClassifier(pl.LightningModule):
         return loss, target, preds.sigmoid()
 
     def configure_optimizers(self):
-        optimizer = optimizer_factory(
-            params=self.parameters(), hparams=self.hparams
-        )
+        optimizer = optimizer_factory(params=self.parameters(), hparams=self.hparams)
 
         scheduler = lr_scheduler_factory(
             optimizer=optimizer,
@@ -136,9 +134,7 @@ class ImageClassifier(pl.LightningModule):
         try:
             train_metric = self.trainer.callback_metrics["train_metric"]
             val_metric = self.trainer.callback_metrics["val_metric"]
-            if self.best_val_metric is None or self._is_metric_better(
-                val_metric
-            ):
+            if self.best_val_metric is None or self._is_metric_better(val_metric):
                 self.best_val_metric = val_metric
                 self.best_train_metric = train_metric
         except (KeyError, AttributeError):
