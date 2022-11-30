@@ -1,8 +1,8 @@
 from pathlib import Path
 
+from lightning.pytorch.core.saving import load_hparams_from_yaml
 from omegaconf import DictConfig
 from omegaconf.errors import ConfigAttributeError
-from pytorch_lightning.core.saving import load_hparams_from_yaml
 
 
 def load_cfg(fpath: Path, cfg_name: str) -> DictConfig:
