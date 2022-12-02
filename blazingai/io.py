@@ -18,3 +18,7 @@ def save_mtrc(fpath: Path, metrics: CrossValMetrics) -> None:
     data[f"oof {metrics.metric}"] = round(metrics.oof_metric, 4)
     with open(fpath, "w") as f:
         json.dump(data, f)
+
+
+def print_mtrc(metric: str, trn_metric: float, val_metric: float) -> None:
+    print(f"\nBest {metric}: Train {trn_metric:.4f}, Valid: {val_metric:.4f}")
