@@ -5,7 +5,7 @@ from typing import Tuple
 import lightning as pl
 import pandas as pd
 from blazingai import learner
-from blazingai.io import save_mtrc, save_pred
+from blazingai.io import print_mtrc, save_mtrc, save_pred
 from blazingai.metrics import CrossValMetrics
 from blazingai.vision import data
 from lightning.lite.utilities.seed import seed_everything
@@ -16,9 +16,9 @@ from timm.data import transforms_factory
 
 # TODO: use protocol instead of ModuleType so that we can use a fake module when
 # unit testing
-def train(cfg: DictConfig, logger: Logger, const: ModuleType, train_routine):
+def train_loop(cfg: DictConfig, logger: Logger, const: ModuleType, train_routine):
     """Generic scaffolding to train a ML model. Nothing in this function should
-    change, irrespectively from the ML task -- NLP, CV, etc."""
+    change, irrespectively from the ML task — e.g., NLP, CV, etc."""
     print(OmegaConf.to_yaml(cfg))
 
     seed_everything(seed=cfg.seed, workers=True)
@@ -32,7 +32,6 @@ def train(cfg: DictConfig, logger: Logger, const: ModuleType, train_routine):
             trn_score, val_score, trgt, pred = train_routine(cfg=cfg, logger=logger)
             metrics.add(trgt=trgt, pred=pred, val_score=val_score, trn_score=trn_score)
 
-        # needed for final ensemble
         # TODO: do not access _pred
         save_pred(fpath=Path(f"preds/model_{cfg.name}_oof.npy"), pred=metrics._pred)
         save_mtrc(fpath=const.metrics_path / f"model_{cfg.name}.json", metrics=metrics)
@@ -41,19 +40,12 @@ def train(cfg: DictConfig, logger: Logger, const: ModuleType, train_routine):
         train_routine(cfg=cfg, logger=logger)
 
 
-def log_mtrc(logger: Logger, metrics: CrossValMetrics) -> None:
-    logger.log_metrics({"cv_trn_metric": metrics.trn_metric})
-    logger.log_metrics({"cv_val_metric": metrics.val_metric})
-    logger.log_metrics({"oof_val_metric": metrics.oof_metric})
-
-
 def is_crossval(cfg: DictConfig) -> bool:
     return True if cfg.fold == -1 else False
 
 
 def train_one_fold_computer_vision(cfg: DictConfig, logger, const, utils) -> Tuple:
-    print()
-    print(f"#####################")
+    print(f"\n#####################")
     print(f"# FOLD {cfg.fold}")
     print(f"#####################")
 
@@ -78,7 +70,7 @@ def train_one_fold_computer_vision(cfg: DictConfig, logger, const, utils) -> Tup
 
     # create datamodule
     dm = data.ImageDataModule(
-        task="classification",
+        task=cfg.task,
         bs=cfg.bs,
         trn_img_paths=trn_img_paths,
         val_img_paths=val_img_paths,
@@ -91,8 +83,8 @@ def train_one_fold_computer_vision(cfg: DictConfig, logger, const, utils) -> Tup
     )
 
     model = learner.ImageClassifier(
-        in_channels=3,
-        num_classes=1,
+        in_channels=cfg.in_channels,
+        num_classes=cfg.num_classes,
         pretrained=cfg.pretrained,
         cfg=cfg,
     )
@@ -125,11 +117,11 @@ def train_one_fold_computer_vision(cfg: DictConfig, logger, const, utils) -> Tup
         trainer.tune(model, dm)
 
     trainer.fit(model, dm)
-    targets_list = df_val.loc[:, "Pawpularity"].values.tolist()  # TODO: generalize
+    targets_list = df_val.loc[:, "target"].values.tolist()  # TODO: generalize
     preds = trainer.predict(model, dm.test_dataloader(), ckpt_path="best")
     preds_list = [p[0] * 100 for b in preds for p in b]
 
-    print_metrics(cfg.metric, model.best_train_metric, model.best_val_metric)
+    print_mtrc(cfg.metric, model.best_train_metric, model.best_val_metric)
     return (
         model.best_train_metric.detach().cpu().numpy(),
         model.best_val_metric.detach().cpu().numpy(),
@@ -138,5 +130,7 @@ def train_one_fold_computer_vision(cfg: DictConfig, logger, const, utils) -> Tup
     )
 
 
-def print_metrics(metric: str, trn_metric: float, val_metric: float) -> None:
-    print(f"\nBest {metric}: Train {trn_metric:.4f}, Valid: {val_metric:.4f}")
+def log_mtrc(logger: Logger, metrics: CrossValMetrics) -> None:
+    logger.log_metrics({"cv_trn_metric": metrics.trn_metric})
+    logger.log_metrics({"cv_val_metric": metrics.val_metric})
+    logger.log_metrics({"oof_val_metric": metrics.oof_metric})
