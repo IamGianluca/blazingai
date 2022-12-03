@@ -10,4 +10,6 @@ dist/
 .vscode/
 .vim/
 
-
+# wait until bug is fixed on lightning/pydantic
+# ImportError: cannot import name 'Schema' from 'pydantic'
+tests/test_utils.py
