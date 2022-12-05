@@ -1,3 +1,4 @@
+import os
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -173,8 +174,6 @@ class ImageDataModule(pl.LightningDataModule):
         self.bs = bs
 
     def setup(self, stage: Optional[str] = None) -> None:
-        if stage:
-            print(stage)
         if self.trn_img_paths:
             self.trn_ds = get_dataset[self.task](
                 img_paths=self.trn_img_paths,
@@ -190,7 +189,6 @@ class ImageDataModule(pl.LightningDataModule):
         if self.tst_img_paths:
             self.test_ds = get_dataset[self.task](
                 img_paths=self.tst_img_paths,
-                trgt=None,
                 aug=self.tst_aug,
             )
 
@@ -199,7 +197,7 @@ class ImageDataModule(pl.LightningDataModule):
             self.trn_ds,
             batch_size=self.bs,
             shuffle=True,
-            num_workers=12,
+            num_workers=os.cpu_count(),
             pin_memory=True,
             drop_last=True,
             collate_fn=self.collate_fn if self.task == "detection" else None,
@@ -210,7 +208,7 @@ class ImageDataModule(pl.LightningDataModule):
             self.val_ds,
             batch_size=self.bs,
             shuffle=False,
-            num_workers=12,
+            num_workers=os.cpu_count(),
             drop_last=False,
             collate_fn=self.collate_fn if self.task == "detection" else None,
         )
@@ -220,7 +218,7 @@ class ImageDataModule(pl.LightningDataModule):
             self.test_ds,
             batch_size=self.bs,
             shuffle=False,
-            num_workers=12,
+            num_workers=os.cpu_count(),
             drop_last=False,
         )
 
