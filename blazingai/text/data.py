@@ -37,9 +37,6 @@ class TextDataModule(pl.LightningDataModule):
                 "tst": Dataset.from_pandas(df[df.kfold == 0]),
             }
         )
-
-    def prepare_data(self) -> None:
-        """How to download, tokenize, etc..."""
         self.ds.map(
             lambda x: self.tokenizer(x["full_text"], truncation=True, padding=True),
             batched=True,
