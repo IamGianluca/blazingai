@@ -1,89 +1,71 @@
 import os
+from pathlib import Path
+from typing import Optional
 
 import lightning as pl
-import numpy as np
 import pandas as pd
-import torch
-from torch.utils.data import DataLoader, Dataset
-
-
-class TextClassificationDataset(Dataset):
-    def __init__(self, text, trgt, tknz, max_len):
-        self.text = text
-        self.trgt = trgt
-        self.tknz = tknz
-        self.max_len = max_len
-
-    def __len__(self):
-        return len(self.text)
-
-    def __getitem__(self, idx):
-        text_tokens = self.tknz.encode_plus(
-            self.text[idx],
-            add_special_tokens=True,
-            truncation=True,
-            padding="max_length",
-            max_length=self.max_len,
-            return_tensors="pt",
-        )
-        otp = {
-            "input_ids": text_tokens["input_ids"].flatten(),
-            "attention_mask": text_tokens["attention_mask"].flatten(),
-        }
-        if self.trgt is not None:
-            return otp, torch.tensor(self.trgt[idx])
-        else:
-            return otp
+from datasets.arrow_dataset import Dataset
+from datasets.dataset_dict import DatasetDict
+from torch.utils.data import DataLoader
+from transformers import AutoTokenizer
 
 
 class TextDataModule(pl.LightningDataModule):
     def __init__(
         self,
-        task: str,
+        model_name_or_path: str,
+        fold: int,
+        data_path: Path,
         bs: int,
-        trn_text,
-        val_text,
-        tst_text,
-        trn_trgt,
-        val_trgt,
-        trn_aug,  # should data aug happen before tokenization? is tokenization something we do in the LightningModule?
-        val_aug,
-        tst_aug,
     ):
         super().__init__()
-        self.task = task
+        self.model_name_or_path = model_name_or_path
+        self.fold = fold
+        self.data_path = data_path
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            self.model_name_or_path, use_fast=True
+        )
         self.bs = bs
-        self.trn_text = trn_text
-        self.val_text = val_text
-        self.tst_text = tst_text
-        self.trn_trgt = trn_trgt
-        self.val_trgt = val_trgt
-        self.trn_aug = trn_aug  # should data aug happen before tokenization? is tokenization something we do in the LightningModule?
-        self.val_aug = val_aug
-        self.tst_aug = tst_aug
 
-    def setup(self, stage=None):
-        self.dataset = TextClassificationDataset(mode="train")
-        self.test_dataset = TextClassificationDataset(mode="test")
-        self.train_data, self.val_data = random_split(
-            self.dataset, [cfg.train_size, self.val_size]
+    def setup(self, stage: Optional[str] = None) -> None:
+        """How to split, define dataset, etc..."""
+        df = pd.read_csv(self.data_path)
+        self.ds = DatasetDict(
+            {
+                "trn": Dataset.from_pandas(df[df.kfold != 0]),
+                "val": Dataset.from_pandas(df[df.kfold == 0]),
+                "tst": Dataset.from_pandas(df[df.kfold == 0]),
+            }
+        )
+
+    def prepare_data(self) -> None:
+        """How to download, tokenize, etc..."""
+        self.ds.map(
+            lambda x: self.tokenizer(x["full_text"], truncation=True, padding=True),
+            batched=True,
         )
 
     def train_dataloader(self):
         return DataLoader(
-            self.train_data,
-            batch_size=self.batch_size,
+            self.ds["trn"],
+            batch_size=self.bs,
             shuffle=True,
             num_workers=os.cpu_count(),
         )
 
     def val_dataloader(self):
         return DataLoader(
-            self.val_data,
-            batch_size=self.batch_size,
+            self.ds["val"],
+            batch_size=self.bs,
             shuffle=False,
             num_workers=os.cpu_count(),
         )
 
     def test_dataloader(self):
-        return DataLoader(self.test_data, batch_size=self.batch_size, shuffle=False)
+        return DataLoader(
+            self.ds["tst"],
+            batch_size=self.bs,
+            shuffle=False,
+            num_workers=os.cpu_count(),
+            drop_last=False,
+        )
