@@ -82,7 +82,7 @@ def train_one_fold_computer_vision(cfg: DictConfig, logger, const, utils) -> Tup
         tst_aug=val_aug,
     )
 
-    model = learner.ImageClassifier(
+    model = learner.VisionLearner(
         in_channels=cfg.in_channels,
         num_classes=cfg.num_classes,
         pretrained=cfg.pretrained,
