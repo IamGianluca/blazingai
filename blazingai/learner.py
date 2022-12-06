@@ -10,7 +10,7 @@ from .metrics import metric_factory
 from .optim import lr_scheduler_factory, optimizer_factory
 
 
-class ImageClassifier(pl.LightningModule):
+class VisionLearner(pl.LightningModule):
     def __init__(
         self,
         in_channels: int,
