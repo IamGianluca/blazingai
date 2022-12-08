@@ -4,11 +4,15 @@ from typing import Tuple
 
 import lightning as pl
 import pandas as pd
+import torch
 from blazingai import learner
 from blazingai.io import print_mtrc, save_mtrc, save_pred
+from blazingai.learner import TextClassifier
 from blazingai.metrics import CrossValMetrics
+from blazingai.text.data import TextDataModule
 from blazingai.vision import data
 from lightning.lite.utilities.seed import seed_everything
+from lightning.pytorch.callbacks.progress import RichProgressBar
 from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig, OmegaConf
 from timm.data import transforms_factory
@@ -46,7 +50,7 @@ def is_crossval(cfg: DictConfig) -> bool:
     return True if cfg.fold == -1 else False
 
 
-def train_one_fold_computer_vision(cfg: DictConfig, logger, const, utils) -> Tuple:
+def image_classification_recipe(cfg: DictConfig, logger, const, utils) -> Tuple:
     print(f"\n#####################")
     print(f"# FOLD {cfg.fold}")
     print(f"#####################")
@@ -136,3 +140,58 @@ def log_mtrc(logger: Logger, metrics: CrossValMetrics) -> None:
     logger.log_metrics({"cv_trn_metric": metrics.trn_metric})
     logger.log_metrics({"cv_val_metric": metrics.val_metric})
     logger.log_metrics({"oof_val_metric": metrics.oof_metric})
+
+
+def text_classification_recipe(cfg: DictConfig, const, logger) -> Tuple:
+    print(f"\n#####################")
+    print(f"# FOLD {cfg.fold}")
+    print(f"#####################")
+
+    data = TextDataModule(
+        model_name_or_path=cfg.model_name,
+        data_path=const.train_folds_fpath,
+        trgt_cols=const.trgt_cols,
+        bs=cfg.bs,
+        fold=cfg.fold,
+    )
+
+    from lightning.pytorch import callbacks
+
+    checkpoint_callback = callbacks.ModelCheckpoint(
+        monitor="val_metric",
+        mode=cfg.metric_mode,
+        dirpath=const.ckpt_path,
+        filename=f"model_{cfg.name}_fold{cfg.fold}",
+        save_weights_only=True,
+    )
+    lr_callback = callbacks.LearningRateMonitor(
+        logging_interval="step", log_momentum=True
+    )
+    model = TextClassifier(cfg)
+
+    trainer = pl.Trainer(
+        default_root_dir="/kaggle/working/",
+        accelerator="gpu",
+        max_epochs=cfg.epochs,
+        devices=[0],
+        precision=16,
+        logger=logger,
+        overfit_batches=cfg.overfit_batches,
+        callbacks=[checkpoint_callback, lr_callback, RichProgressBar()],
+    )
+    trainer.fit(model, data)
+    print_mtrc(cfg.metric, model.best_train_metric, model.best_val_metric)
+
+    pred = trainer.predict(model, data.val_dataloader(), ckpt_path="best")
+    pred = torch.vstack(pred)
+
+    trgt = []
+    for btch in data.val_dataloader():
+        trgt.append(btch["labels"])
+    trgt = torch.vstack(trgt)
+    return (
+        model.best_train_metric.detach().cpu().numpy(),
+        model.best_val_metric.detach().cpu().numpy(),
+        trgt,
+        pred,
+    )
