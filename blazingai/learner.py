@@ -18,26 +18,23 @@ class ImageClassifier(pl.LightningModule):
 
     def __init__(
         self,
-        in_channels: int,
-        num_classes: int,
         cfg: DictConfig,
-        pretrained: bool = False,
     ) -> None:
         super().__init__()
         self.save_hyperparameters(cfg)
 
         self.backbone = timm.create_model(
             model_name=self.hparams.arch,  # type: ignore
-            pretrained=pretrained,
+            pretrained=self.hparams.pretrained,  # type: ignore
             num_classes=0,
-            in_chans=in_channels,
+            in_chans=self.hparams.in_channels,  # type: ignore
             drop_rate=self.hparams.dropout,  # type: ignore
         )
         self.head = nn.Sequential(
             nn.LazyLinear(128),
             nn.Dropout(0.1),
             nn.Linear(128, 64),
-            nn.Linear(64, num_classes),
+            nn.Linear(64, self.hparams.num_classes),  # type: ignore
         )
 
         self.train_metric = metric_factory(cfg=cfg)
@@ -63,7 +60,7 @@ class ImageClassifier(pl.LightningModule):
             target = (1 - lam) * target[:, 0] + lam * target[:, 1]
             target = target.reshape(-1, 1)
 
-        self.log("train_loss", loss, on_step=True, on_epoch=False)
+        self.log("train_loss", loss, on_step=True, on_epoch=False)  # type: ignore
         self.train_metric.update(preds=preds, target=target)
         return loss
 
@@ -74,7 +71,7 @@ class ImageClassifier(pl.LightningModule):
         x, target = batch
         loss, target, preds = self._step(x, target)
 
-        self.log("val_loss", loss, on_step=True, on_epoch=False)
+        self.log("val_loss", loss, on_step=True, on_epoch=False)  # type: ignore
         self.val_metric.update(preds=preds, target=target)
         return loss
 
@@ -107,7 +104,7 @@ class ImageClassifier(pl.LightningModule):
         scheduler = lr_scheduler_factory(
             optimizer=optimizer,
             hparams=self.hparams,
-            data_loader=self.trainer.datamodule.train_dataloader(),
+            data_loader=self.trainer.datamodule.train_dataloader(),  # type: ignore
         )
         return {
             "optimizer": optimizer,
@@ -122,13 +119,13 @@ class ImageClassifier(pl.LightningModule):
         }
 
     def _compute_loss(self, preds, target):
-        if self.hparams.label_smoothing > 0.0:
+        if self.hparams.label_smoothing > 0.0:  # type: ignore
             target = (
-                target * (1 - self.hparams.label_smoothing)
-                + 0.5 * self.hparams.label_smoothing
+                target * (1 - self.hparams.label_smoothing)  # type: ignore
+                + 0.5 * self.hparams.label_smoothing  # type: ignore
             )
 
-        loss_fn = loss_factory(name=self.hparams.loss)
+        loss_fn = loss_factory(name=self.hparams.loss)  # type: ignore
         loss = loss_fn(preds, target)
         return loss
 
@@ -144,9 +141,9 @@ class ImageClassifier(pl.LightningModule):
             pass
 
     def _is_metric_better(self, new_metric):
-        if self.hparams.metric_mode == "max":
+        if self.hparams.metric_mode == "max":  # type: ignore
             return new_metric > self.best_val_metric
-        elif self.hparams.metric_mode == "min":
+        elif self.hparams.metric_mode == "min":  # type: ignore
             return new_metric < self.best_val_metric
         else:
             raise ValueError("metric_mode can only be min or max")
@@ -161,7 +158,7 @@ class TextClassifier(pl.LightningModule):
             nn.LazyLinear(128),
             nn.Dropout(0.1),
             nn.Linear(128, 64),
-            nn.Linear(64, self.hparams.out_nodes),
+            nn.Linear(64, self.hparams.out_nodes),  # type: ignore
         )
 
         self.train_metric = metric_factory(cfg=cfg)
@@ -180,7 +177,7 @@ class TextClassifier(pl.LightningModule):
         x, y = batch, batch["labels"]
         loss, y, y_hat = self._step(x, y)
 
-        self.log("train_loss", loss, on_step=True, on_epoch=False)
+        self.log("train_loss", loss, on_step=True, on_epoch=False)  # type: ignore
         self.train_metric.update(preds=y_hat, target=y)
         return loss
 
@@ -191,7 +188,7 @@ class TextClassifier(pl.LightningModule):
         x, y = batch, batch["labels"]
         loss, y, y_hat = self._step(x, y)
 
-        self.log("val_loss", loss, on_step=True, on_epoch=False)
+        self.log("val_loss", loss, on_step=True, on_epoch=False)  # type: ignore
         self.val_metric.update(preds=y_hat, target=y)
         return loss
 
@@ -202,7 +199,7 @@ class TextClassifier(pl.LightningModule):
         return loss, target, preds
 
     def _compute_loss(self, preds, target):
-        loss_fn = loss_factory(name=self.hparams.loss)
+        loss_fn = loss_factory(name=self.hparams.loss)  # type: ignore
         loss = loss_fn(preds, target)
         return loss
 
@@ -221,7 +218,7 @@ class TextClassifier(pl.LightningModule):
         scheduler = lr_scheduler_factory(
             optimizer=optimizer,
             hparams=self.hparams,
-            data_loader=self.trainer.datamodule.train_dataloader(),
+            data_loader=self.trainer.datamodule.train_dataloader(),  # type: ignore
         )
         return {
             "optimizer": optimizer,
@@ -247,9 +244,9 @@ class TextClassifier(pl.LightningModule):
             pass
 
     def _is_metric_better(self, new_metric):
-        if self.hparams.metric_mode == "max":
+        if self.hparams.metric_mode == "max":  # type: ignore
             return new_metric > self.best_val_metric
-        elif self.hparams.metric_mode == "min":
+        elif self.hparams.metric_mode == "min":  # type: ignore
             return new_metric < self.best_val_metric
         else:
             raise ValueError("metric_mode can only be min or max")

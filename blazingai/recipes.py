@@ -89,12 +89,7 @@ def image_classification_recipe(cfg: DictConfig, logger, const, utils) -> Tuple:
         tst_aug=val_aug,  # type: ignore
     )
 
-    model = learner.ImageClassifier(
-        in_channels=cfg.in_channels,
-        num_classes=cfg.num_classes,
-        pretrained=cfg.pretrained,
-        cfg=cfg,
-    )
+    model = learner.ImageClassifier(cfg=cfg)
 
     checkpoint_callback = callbacks.ModelCheckpoint(
         monitor="val_metric",
