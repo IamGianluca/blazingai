@@ -12,6 +12,7 @@ from blazingai.metrics import CrossValMetrics
 from blazingai.text.data import TextDataModule
 from blazingai.vision import data
 from lightning.lite.utilities.seed import seed_everything
+from lightning.pytorch import callbacks
 from lightning.pytorch.callbacks.progress import RichProgressBar
 from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig, OmegaConf
@@ -83,9 +84,9 @@ def image_classification_recipe(cfg: DictConfig, logger, const, utils) -> Tuple:
         tst_img_paths=val_img_paths,
         trn_trgt=trn_targets,
         val_trgt=val_targets,
-        trn_aug=trn_aug,
-        val_aug=val_aug,
-        tst_aug=val_aug,
+        trn_aug=trn_aug,  # type: ignore
+        val_aug=val_aug,  # type: ignore
+        tst_aug=val_aug,  # type: ignore
     )
 
     model = learner.ImageClassifier(
@@ -102,7 +103,7 @@ def image_classification_recipe(cfg: DictConfig, logger, const, utils) -> Tuple:
         filename=f"model_{cfg.name}_fold{cfg.fold}",
         save_weights_only=True,
     )
-    lr_callback = lr_monitor.LearningRateMonitor(
+    lr_callback = callbacks.LearningRateMonitor(
         logging_interval="step", log_momentum=True
     )
 
@@ -113,24 +114,23 @@ def image_classification_recipe(cfg: DictConfig, logger, const, utils) -> Tuple:
         accumulate_grad_batches=cfg.accumulate_grad_batches,
         auto_scale_batch_size=cfg.auto_batch_size,
         max_epochs=cfg.epochs,
+        overfit_batches=cfg.overfit_batches,
         logger=logger,
         callbacks=[checkpoint_callback, lr_callback],
-        # limit_train_batches=1,
-        # limit_val_batches=1,
     )
 
     if cfg.auto_lr or cfg.auto_batch_size:
         trainer.tune(model, dm)
 
     trainer.fit(model, dm)
-    targets_list = df_val.loc[:, "target"].values.tolist()  # TODO: generalize
+    targets_list = df_val.loc[:, const.trgt_cols].values.tolist()
     preds = trainer.predict(model, dm.test_dataloader(), ckpt_path="best")
-    preds_list = [p[0] * 100 for b in preds for p in b]
+    preds_list = [p[0] * 100 for b in preds for p in b]  # type: ignore
 
-    print_mtrc(cfg.metric, model.best_train_metric, model.best_val_metric)
+    print_mtrc(cfg.metric, model.best_train_metric, model.best_val_metric)  # type: ignore
     return (
-        model.best_train_metric.detach().cpu().numpy(),
-        model.best_val_metric.detach().cpu().numpy(),
+        model.best_train_metric.detach().cpu().numpy(),  # type: ignore
+        model.best_val_metric.detach().cpu().numpy(),  # type: ignore
         targets_list,
         preds_list,
     )
@@ -155,8 +155,6 @@ def text_classification_recipe(cfg: DictConfig, const, logger) -> Tuple:
         fold=cfg.fold,
     )
 
-    from lightning.pytorch import callbacks
-
     checkpoint_callback = callbacks.ModelCheckpoint(
         monitor="val_metric",
         mode=cfg.metric_mode,
@@ -175,23 +173,23 @@ def text_classification_recipe(cfg: DictConfig, const, logger) -> Tuple:
         max_epochs=cfg.epochs,
         devices=[0],
         precision=16,
-        logger=logger,
         overfit_batches=cfg.overfit_batches,
+        logger=logger,
         callbacks=[checkpoint_callback, lr_callback, RichProgressBar()],
     )
     trainer.fit(model, data)
-    print_mtrc(cfg.metric, model.best_train_metric, model.best_val_metric)
+    print_mtrc(cfg.metric, model.best_train_metric, model.best_val_metric)  # type: ignore
 
     pred = trainer.predict(model, data.val_dataloader(), ckpt_path="best")
-    pred = torch.vstack(pred)
+    pred = torch.vstack(pred)  # type: ignore
 
     trgt = []
     for btch in data.val_dataloader():
         trgt.append(btch["labels"])
     trgt = torch.vstack(trgt)
     return (
-        model.best_train_metric.detach().cpu().numpy(),
-        model.best_val_metric.detach().cpu().numpy(),
+        model.best_train_metric.detach().cpu().numpy(),  # type: ignore
+        model.best_val_metric.detach().cpu().numpy(),  # type: ignore
         trgt,
         pred,
     )

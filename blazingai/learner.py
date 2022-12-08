@@ -2,7 +2,6 @@ from typing import Any, List, Optional
 
 import lightning as pl
 import timm
-import torch
 
 from blazingai.loss import loss_factory
 from blazingai.metrics import metric_factory
@@ -82,8 +81,6 @@ class ImageClassifier(pl.LightningModule):
     def validation_epoch_end(self, outputs: List):
         self.log("val_metric", self.val_metric.compute())
         self._register_best_train_and_val_metrics()
-        # BUG: the metrics for the very last epoch are not printed
-        # but are nonetheless logged in neptune
 
     def predict_step(
         self, batch: Any, batch_idx: int, dataloader_idx: Optional[int] = None
