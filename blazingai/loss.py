@@ -16,14 +16,14 @@ def loss_factory(name):
         return nn.CrossEntropyLoss()
     elif name == "focal_loss":
         return BinaryFocalLossWithLogits()
+    elif name == "mse":
+        return nn.MSELoss()
     else:
         raise ValueError(f"{name} loss not supported yet.")
 
 
 class BinaryFocalLossWithLogits(nn.Module):
-    def __init__(
-        self, alpha: float = 0.25, gamma: float = 2, reduction: bool = True
-    ):
+    def __init__(self, alpha: float = 0.25, gamma: float = 2, reduction: bool = True):
         super().__init__()
         self.alpha = alpha
         self.gamma = gamma
@@ -102,12 +102,8 @@ class MixUpCrossEntropy:
             loss = self.criterion(logits, y, reduction=self.reduction)
 
         elif y.shape[1] == 3:
-            loss_a = self.criterion(
-                logits, y[:, 0].long(), reduction=self.reduction
-            )
-            loss_b = self.criterion(
-                logits, y[:, 1].long(), reduction=self.reduction
-            )
+            loss_a = self.criterion(logits, y[:, 0].long(), reduction=self.reduction)
+            loss_b = self.criterion(logits, y[:, 1].long(), reduction=self.reduction)
             loss = (1 - y[:, 2]) * loss_a + y[:, 2] * loss_b
 
         if self.reduction == "mean":

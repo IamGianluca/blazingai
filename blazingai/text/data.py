@@ -4,7 +4,6 @@ from typing import List, Optional
 
 import lightning as pl
 import pandas as pd
-import torch
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
 from torch.utils.data import DataLoader

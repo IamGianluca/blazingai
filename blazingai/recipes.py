@@ -29,12 +29,14 @@ def train_loop(cfg: DictConfig, logger: Logger, const: ModuleType, train_routine
         for current_fold in range(cfg.n_folds):
             cfg.fold = current_fold  # NOTE: reassigning value to existing member
 
-            trn_score, val_score, trgt, pred = train_routine(cfg=cfg, logger=logger)
+            trn_score, val_score, trgt, pred = train_routine(
+                cfg=cfg, const=const, logger=logger
+            )
             metrics.add(trgt=trgt, pred=pred, val_score=val_score, trn_score=trn_score)
 
         # TODO: do not access _pred
-        save_pred(fpath=Path(f"preds/model_{cfg.name}_oof.npy"), pred=metrics._pred)
-        save_mtrc(fpath=const.metrics_path / f"model_{cfg.name}.json", metrics=metrics)
+        save_pred(fpath=Path(f"pred/model_{cfg.name}_oof.npy"), pred=metrics._pred)
+        save_mtrc(fpath=const.mtrc_path / f"model_{cfg.name}.json", metrics=metrics)
         log_mtrc(logger=logger, metrics=metrics)
     else:
         train_routine(cfg=cfg, logger=logger)
@@ -82,7 +84,7 @@ def train_one_fold_computer_vision(cfg: DictConfig, logger, const, utils) -> Tup
         tst_aug=val_aug,
     )
 
-    model = learner.VisionLearner(
+    model = learner.ImageClassifier(
         in_channels=cfg.in_channels,
         num_classes=cfg.num_classes,
         pretrained=cfg.pretrained,

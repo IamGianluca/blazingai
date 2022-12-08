@@ -7,8 +7,6 @@ from torch.optim.lr_scheduler import (
 )
 from transformers.optimization import AdamW, get_cosine_schedule_with_warmup
 
-# torch.optim.lr_scheduler.OneCycleLR
-
 
 def optimizer_factory(params, hparams):
     if hparams.opt == "adam":
