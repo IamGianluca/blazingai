@@ -84,7 +84,6 @@ class ImageClassifier(pl.LightningModule):
         self._register_best_train_and_val_metrics()
         # BUG: the metrics for the very last epoch are not printed
         # but are nonetheless logged in neptune
-        self._print_metrics_to_console()
 
     def predict_step(
         self, batch: Any, batch_idx: int, dataloader_idx: Optional[int] = None
@@ -155,18 +154,6 @@ class ImageClassifier(pl.LightningModule):
         else:
             raise ValueError("metric_mode can only be min or max")
 
-    def _print_metrics_to_console(self):
-        try:
-            train_metric = self.trainer.callback_metrics["train_metric"]
-            val_metric = self.trainer.callback_metrics["val_metric"]
-            self.trainer.progress_bar_callback.main_progress_bar.write(
-                f"Epoch {self.current_epoch} // "
-                f"train metric: {train_metric:.4f}, valid metric: {val_metric:.4f}"
-            )
-        except (KeyError, AttributeError):
-            # these errors occurs when in "tuning" mode (find optimal lr)
-            pass
-
 
 class TextClassifier(pl.LightningModule):
     def __init__(self, cfg: DictConfig):
@@ -225,9 +212,6 @@ class TextClassifier(pl.LightningModule):
     def validation_epoch_end(self, outputs: List):
         self.log("val_metric", self.val_metric.compute())
         self._register_best_train_and_val_metrics()
-        # BUG: the metrics for the very last epoch are not printed
-        # but are nonetheless logged in neptune
-        self._print_metrics_to_console()
 
     def predict_step(self, batch, batch_idx):
         x = batch
@@ -272,15 +256,3 @@ class TextClassifier(pl.LightningModule):
             return new_metric < self.best_val_metric
         else:
             raise ValueError("metric_mode can only be min or max")
-
-    def _print_metrics_to_console(self):
-        try:
-            train_metric = self.trainer.callback_metrics["train_metric"]
-            val_metric = self.trainer.callback_metrics["val_metric"]
-            self.trainer.progress_bar_callback.main_progress_bar.write(
-                f"Epoch {self.current_epoch} // "
-                f"train metric: {train_metric:.4f}, valid metric: {val_metric:.4f}"
-            )
-        except (KeyError, AttributeError):
-            # these errors occurs when in "tuning" mode (find optimal lr)
-            pass
