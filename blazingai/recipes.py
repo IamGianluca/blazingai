@@ -3,6 +3,7 @@ from types import ModuleType
 from typing import Tuple
 
 import lightning as pl
+import numpy as np
 import pandas as pd
 import torch
 from blazingai import learner
@@ -54,7 +55,9 @@ def is_crossval(cfg: DictConfig) -> bool:
     return True if cfg.fold == -1 else False
 
 
-def image_classification_recipe(cfg: DictConfig, logger, const, utils) -> Tuple:
+def image_classification_recipe(
+    cfg: DictConfig, logger, const, utils
+) -> Tuple[np.ndarray, np.ndarray, torch.Tensor, torch.Tensor]:
     df = pd.read_csv(const.train_folds_all_fpath)
     df_trn = df[df.kfold != cfg.fold].reset_index()
     df_val = df[df.kfold == cfg.fold].reset_index()
@@ -133,7 +136,9 @@ def log_mtrc(logger: Logger, metrics: CrossValMetrics) -> None:
     logger.log_metrics({"oof_val_metric": metrics.oof_metric})
 
 
-def text_classification_recipe(cfg: DictConfig, const, logger) -> Tuple:
+def text_classification_recipe(
+    cfg: DictConfig, const, logger
+) -> Tuple[np.ndarray, np.ndarray, torch.Tensor, torch.Tensor]:
     data = TextDataModule(
         model_name_or_path=cfg.model_name,
         data_path=const.train_folds_fpath,

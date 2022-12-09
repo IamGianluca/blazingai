@@ -1,14 +1,15 @@
 import json
 from pathlib import Path
+from typing import List
 
 import numpy as np
+import torch
 from blazingai.metrics import CrossValMetrics
-from numpy.typing import ArrayLike
 
 
-def save_pred(fpath: Path, pred: ArrayLike) -> None:
-    pred = np.array(pred)
-    np.save(fpath, pred)
+def save_pred(fpath: Path, pred: List[torch.Tensor]) -> None:
+    pred_arr = torch.vstack(pred).to(torch.float32)
+    np.save(fpath, pred_arr)
 
 
 def save_mtrc(fpath: Path, metrics: CrossValMetrics) -> None:

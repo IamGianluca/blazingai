@@ -2,6 +2,7 @@ from typing import Any, List, Optional
 
 import lightning as pl
 import timm
+import torch
 
 from blazingai.loss import loss_factory
 from blazingai.metrics import metric_factory
@@ -207,7 +208,7 @@ class TextClassifier(pl.LightningModule):
         self.log("val_metric", self.val_metric.compute())
         self._register_best_train_and_val_metrics()
 
-    def predict_step(self, batch, batch_idx):
+    def predict_step(self, batch, batch_idx) -> torch.tensor:
         x = batch
         y_hat = self(x)[:, 0, :]
         return y_hat

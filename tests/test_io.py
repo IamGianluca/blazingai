@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+import torch
 from blazingai.io import save_mtrc, save_pred
 
 
@@ -22,10 +23,19 @@ def test_save_metrics(tmp_path, metric):
         assert f.readline() == '{"train rmse": 0.1, "cv rmse": 0.05, "oof rmse": 0.07}'
 
 
-def test_save_predictions(tmp_path):
+@pytest.mark.parametrize("dtype", [torch.bfloat16, torch.float16, torch.float32])
+def test_save_predictions(tmp_path, dtype):
+    # given
     fpath = tmp_path / "model_weights.npy"
-    preds = [1, 2, 3, 4, 5, 6]
+    preds = [
+        torch.tensor([1, 2]).to(dtype),
+        torch.tensor([3, 4]).to(dtype),
+        torch.tensor([5, 6]).to(dtype),
+    ]
+
+    # when
     save_pred(fpath=fpath, pred=preds)
 
+    # then
     result = np.load(fpath)
-    np.testing.assert_array_almost_equal(result, np.array(preds))
+    np.testing.assert_array_almost_equal(result, np.array([[1, 2], [3, 4], [5, 6]]))
