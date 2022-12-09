@@ -174,23 +174,25 @@ class ImageDataModule(pl.LightningDataModule):
         self.bs = bs
 
     def setup(self, stage: Optional[str] = None) -> None:
-        if self.trn_img_paths:
+        if stage == "fit":
             self.trn_ds = get_dataset[self.task](
                 img_paths=self.trn_img_paths,
                 trgt=self.trn_trgt,
                 aug=self.trn_aug,
             )
-        if self.val_img_paths:
             self.val_ds = get_dataset[self.task](
                 img_paths=self.val_img_paths,
                 trgt=self.val_trgt,
                 aug=self.val_aug,
             )
-        if self.tst_img_paths:
-            self.test_ds = get_dataset[self.task](
-                img_paths=self.tst_img_paths,
-                aug=self.tst_aug,
-            )
+        elif stage == "predict":
+            if self.tst_img_paths:
+                self.test_ds = get_dataset[self.task](
+                    img_paths=self.tst_img_paths,
+                    aug=self.tst_aug,
+                )
+        else:
+            raise ValueError(f"stage `{stage}` currently not supported")
 
     def train_dataloader(self):
         return DataLoader(
@@ -200,7 +202,7 @@ class ImageDataModule(pl.LightningDataModule):
             num_workers=os.cpu_count(),
             pin_memory=True,
             drop_last=True,
-            collate_fn=self.collate_fn if self.task == "detection" else None,
+            collate_fn=self._collate_fn if self.task == "detection" else None,
         )
 
     def val_dataloader(self):
@@ -210,10 +212,10 @@ class ImageDataModule(pl.LightningDataModule):
             shuffle=False,
             num_workers=os.cpu_count(),
             drop_last=False,
-            collate_fn=self.collate_fn if self.task == "detection" else None,
+            collate_fn=self._collate_fn if self.task == "detection" else None,
         )
 
-    def test_dataloader(self):
+    def predict_dataloader(self):
         return DataLoader(
             self.test_ds,
             batch_size=self.bs,
@@ -222,7 +224,7 @@ class ImageDataModule(pl.LightningDataModule):
             drop_last=False,
         )
 
-    def collate_fn(self, batch):
+    def _collate_fn(self, batch):
         return tuple(zip(*batch))
 
 

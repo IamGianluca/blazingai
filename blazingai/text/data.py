@@ -34,13 +34,18 @@ class TextDataModule(pl.LightningDataModule):
         df = pd.read_csv(self.data_path)
         df["labels"] = df[self.trgt_cols].values.tolist()
 
-        ds = DatasetDict(
-            {
-                "trn": Dataset.from_pandas(df[df.kfold != self.fold]),
-                "val": Dataset.from_pandas(df[df.kfold == self.fold]),
-                "tst": Dataset.from_pandas(df[df.kfold == self.fold]),
-            }
-        )
+        if stage == "fit":
+            ds = DatasetDict(
+                {
+                    "trn": Dataset.from_pandas(df[df.kfold != self.fold]),
+                    "val": Dataset.from_pandas(df[df.kfold == self.fold]),
+                }
+            )
+        elif stage == "predict":
+            ds = DatasetDict({"tst": Dataset.from_pandas(df[df.kfold == self.fold])})
+        else:
+            raise ValueError(f"stage `{stage}` currently not supported")
+
         self.ds_encoded = ds.with_format("torch").map(self.encode)
 
     def encode(self, examples):
@@ -65,7 +70,7 @@ class TextDataModule(pl.LightningDataModule):
             num_workers=os.cpu_count(),
         )
 
-    def test_dataloader(self):
+    def predict_dataloader(self):
         return DataLoader(
             self.ds_encoded["tst"],
             batch_size=self.bs,
