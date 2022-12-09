@@ -113,11 +113,12 @@ def image_classification_recipe(cfg: DictConfig, logger, const, utils) -> Tuple:
     if cfg.auto_lr or cfg.auto_batch_size:
         trainer.tune(model, data)
 
-    trainer.fit(model, data)
+    trainer.fit(model, datamodule=data)
     print_mtrc(cfg.metric, model.best_train_metric, model.best_val_metric)  # type: ignore
+
     trgt = df_val.loc[:, const.trgt_cols].values.tolist()
-    preds = trainer.predict(model, data.test_dataloader(), ckpt_path="best")
-    pred = [p[0] * 100 for b in preds for p in b]  # type: ignore
+    pred = trainer.predict(model, datamodule=data, ckpt_path="best")
+    pred = [p[0] * 100 for b in pred for p in b]  # type: ignore
     return (
         model.best_train_metric.detach().cpu().numpy(),  # type: ignore
         model.best_val_metric.detach().cpu().numpy(),  # type: ignore
@@ -168,14 +169,14 @@ def text_classification_recipe(cfg: DictConfig, const, logger) -> Tuple:
     if cfg.auto_lr or cfg.auto_batch_size:
         trainer.tune(model, data)
 
-    trainer.fit(model, data)
+    trainer.fit(model, datamodule=data)
     print_mtrc(cfg.metric, model.best_train_metric, model.best_val_metric)  # type: ignore
 
-    pred = trainer.predict(model, data.val_dataloader(), ckpt_path="best")
+    pred = trainer.predict(model, datamodule=data, ckpt_path="best")
     pred = torch.vstack(pred)  # type: ignore
 
     trgt = []
-    for btch in data.val_dataloader():
+    for btch in data.predict_dataloader():
         trgt.append(btch["labels"])
     trgt = torch.vstack(trgt)
     return (
