@@ -10,7 +10,7 @@ from blazingai.io import print_mtrc, save_mtrc, save_pred
 from blazingai.learner import TextClassifier
 from blazingai.metrics import CrossValMetrics
 from blazingai.text.data import TextDataModule
-from blazingai.vision import data
+from blazingai.vision.data import ImageDataModule
 from lightning.lite.utilities.seed import seed_everything
 from lightning.pytorch import callbacks
 from lightning.pytorch.callbacks.progress import RichProgressBar
@@ -33,6 +33,9 @@ def train_loop(cfg: DictConfig, logger: Logger, const: ModuleType, train_routine
 
         for current_fold in range(cfg.n_folds):
             cfg.fold = current_fold  # NOTE: reassigning value to existing member
+            print(f"\n#####################")
+            print(f"# FOLD {cfg.fold}")
+            print(f"#####################")
 
             trn_score, val_score, trgt, pred = train_routine(
                 cfg=cfg, const=const, logger=logger
@@ -52,11 +55,6 @@ def is_crossval(cfg: DictConfig) -> bool:
 
 
 def image_classification_recipe(cfg: DictConfig, logger, const, utils) -> Tuple:
-    print(f"\n#####################")
-    print(f"# FOLD {cfg.fold}")
-    print(f"#####################")
-
-    # get image paths and targets
     df = pd.read_csv(const.train_folds_all_fpath)
     df_trn = df[df.kfold != cfg.fold].reset_index()
     df_val = df[df.kfold == cfg.fold].reset_index()
@@ -75,8 +73,7 @@ def image_classification_recipe(cfg: DictConfig, logger, const, utils) -> Tuple:
         is_training=False,
     )
 
-    # create datamodule
-    dm = data.ImageDataModule(
+    data = ImageDataModule(
         task=cfg.task,
         bs=cfg.bs,
         trn_img_paths=trn_img_paths,
@@ -90,11 +87,10 @@ def image_classification_recipe(cfg: DictConfig, logger, const, utils) -> Tuple:
     )
 
     model = learner.ImageClassifier(cfg=cfg)
-
     checkpoint_callback = callbacks.ModelCheckpoint(
         monitor="val_metric",
         mode=cfg.metric_mode,
-        dirpath=const.ckpts_path,
+        dirpath=const.ckpt_path,
         filename=f"model_{cfg.name}_fold{cfg.fold}",
         save_weights_only=True,
     )
@@ -103,31 +99,30 @@ def image_classification_recipe(cfg: DictConfig, logger, const, utils) -> Tuple:
     )
 
     trainer = pl.Trainer(
-        gpus=1,
+        accelerator="gpu",
+        max_epochs=cfg.epochs,
+        devices=[0],
         precision=cfg.precision,
+        overfit_batches=cfg.overfit_batches,
         auto_lr_find=cfg.auto_lr,
         accumulate_grad_batches=cfg.accumulate_grad_batches,
         auto_scale_batch_size=cfg.auto_batch_size,
-        max_epochs=cfg.epochs,
-        overfit_batches=cfg.overfit_batches,
         logger=logger,
-        callbacks=[checkpoint_callback, lr_callback],
+        callbacks=[checkpoint_callback, lr_callback, RichProgressBar()],
     )
-
     if cfg.auto_lr or cfg.auto_batch_size:
-        trainer.tune(model, dm)
+        trainer.tune(model, data)
 
-    trainer.fit(model, dm)
-    targets_list = df_val.loc[:, const.trgt_cols].values.tolist()
-    preds = trainer.predict(model, dm.test_dataloader(), ckpt_path="best")
-    preds_list = [p[0] * 100 for b in preds for p in b]  # type: ignore
-
+    trainer.fit(model, data)
     print_mtrc(cfg.metric, model.best_train_metric, model.best_val_metric)  # type: ignore
+    trgt = df_val.loc[:, const.trgt_cols].values.tolist()
+    preds = trainer.predict(model, data.test_dataloader(), ckpt_path="best")
+    pred = [p[0] * 100 for b in preds for p in b]  # type: ignore
     return (
         model.best_train_metric.detach().cpu().numpy(),  # type: ignore
         model.best_val_metric.detach().cpu().numpy(),  # type: ignore
-        targets_list,
-        preds_list,
+        trgt,
+        pred,
     )
 
 
@@ -138,10 +133,6 @@ def log_mtrc(logger: Logger, metrics: CrossValMetrics) -> None:
 
 
 def text_classification_recipe(cfg: DictConfig, const, logger) -> Tuple:
-    print(f"\n#####################")
-    print(f"# FOLD {cfg.fold}")
-    print(f"#####################")
-
     data = TextDataModule(
         model_name_or_path=cfg.model_name,
         data_path=const.train_folds_fpath,
@@ -149,6 +140,7 @@ def text_classification_recipe(cfg: DictConfig, const, logger) -> Tuple:
         bs=cfg.bs,
         fold=cfg.fold,
     )
+    model = TextClassifier(cfg=cfg)
 
     checkpoint_callback = callbacks.ModelCheckpoint(
         monitor="val_metric",
@@ -160,18 +152,22 @@ def text_classification_recipe(cfg: DictConfig, const, logger) -> Tuple:
     lr_callback = callbacks.LearningRateMonitor(
         logging_interval="step", log_momentum=True
     )
-    model = TextClassifier(cfg)
 
     trainer = pl.Trainer(
-        default_root_dir="/kaggle/working/",
         accelerator="gpu",
         max_epochs=cfg.epochs,
         devices=[0],
-        precision=16,
+        precision=cfg.precision,
         overfit_batches=cfg.overfit_batches,
+        auto_lr_find=cfg.auto_lr,
+        accumulate_grad_batches=cfg.accumulate_grad_batches,
+        auto_scale_batch_size=cfg.auto_batch_size,
         logger=logger,
         callbacks=[checkpoint_callback, lr_callback, RichProgressBar()],
     )
+    if cfg.auto_lr or cfg.auto_batch_size:
+        trainer.tune(model, data)
+
     trainer.fit(model, data)
     print_mtrc(cfg.metric, model.best_train_metric, model.best_val_metric)  # type: ignore
 
