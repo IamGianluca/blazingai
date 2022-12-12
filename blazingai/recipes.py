@@ -38,10 +38,15 @@ def train_loop(cfg: DictConfig, logger: Logger, const: ModuleType, train_routine
             print(f"# FOLD {cfg.fold}")
             print(f"#####################")
 
-            trn_score, val_score, trgt, pred = train_routine(
-                cfg=cfg, const=const, logger=logger
-            )
-            metrics.add(trgt=trgt, pred=pred, val_score=val_score, trn_score=trn_score)
+            try:
+                trn_score, val_score, trgt, pred = train_routine(
+                    cfg=cfg, const=const, logger=logger
+                )
+                metrics.add(
+                    trgt=trgt, pred=pred, val_score=val_score, trn_score=trn_score
+                )
+            except:
+                pass
 
         # TODO: do not access _pred
         save_pred(fpath=Path(f"pred/model_{cfg.name}_oof.npy"), pred=metrics._pred)
@@ -115,19 +120,19 @@ def image_classification_recipe(
     )
     if cfg.auto_lr or cfg.auto_batch_size:
         trainer.tune(model, data)
+    else:
+        trainer.fit(model, datamodule=data)
+        print_mtrc(cfg.metric, model.best_train_metric, model.best_val_metric)  # type: ignore
 
-    trainer.fit(model, datamodule=data)
-    print_mtrc(cfg.metric, model.best_train_metric, model.best_val_metric)  # type: ignore
-
-    trgt = df_val.loc[:, const.trgt_cols].values.tolist()
-    pred = trainer.predict(model, datamodule=data, ckpt_path="best")
-    pred = [p[0] * 100 for b in pred for p in b]  # type: ignore
-    return (
-        model.best_train_metric.detach().cpu().numpy(),  # type: ignore
-        model.best_val_metric.detach().cpu().numpy(),  # type: ignore
-        trgt,
-        pred,
-    )
+        trgt = df_val.loc[:, const.trgt_cols].values.tolist()
+        pred = trainer.predict(model, datamodule=data, ckpt_path="best")
+        pred = [p[0] * 100 for b in pred for p in b]  # type: ignore
+        return (
+            model.best_train_metric.detach().cpu().numpy(),  # type: ignore
+            model.best_val_metric.detach().cpu().numpy(),  # type: ignore
+            trgt,
+            pred,
+        )
 
 
 def log_mtrc(logger: Logger, metrics: CrossValMetrics) -> None:
@@ -172,21 +177,25 @@ def text_classification_recipe(
         callbacks=[checkpoint_callback, lr_callback, RichProgressBar()],
     )
     if cfg.auto_lr or cfg.auto_batch_size:
-        trainer.tune(model, data)
+        try:
+            trainer.tune(model, data)
+            return (None), (None), (None), (None)
+        except RuntimeError:
+            return (None), (None), (None), (None)
+    else:
+        trainer.fit(model, datamodule=data)
+        print_mtrc(cfg.metric, model.best_train_metric, model.best_val_metric)  # type: ignore
 
-    trainer.fit(model, datamodule=data)
-    print_mtrc(cfg.metric, model.best_train_metric, model.best_val_metric)  # type: ignore
+        pred = trainer.predict(model, datamodule=data, ckpt_path="best")
+        pred = torch.vstack(pred)  # type: ignore
 
-    pred = trainer.predict(model, datamodule=data, ckpt_path="best")
-    pred = torch.vstack(pred)  # type: ignore
-
-    trgt = []
-    for btch in data.predict_dataloader():
-        trgt.append(btch["labels"])
-    trgt = torch.vstack(trgt)
-    return (
-        model.best_train_metric.detach().cpu().numpy(),  # type: ignore
-        model.best_val_metric.detach().cpu().numpy(),  # type: ignore
-        trgt,
-        pred,
-    )
+        trgt = []
+        for btch in data.predict_dataloader():
+            trgt.append(btch["labels"])
+        trgt = torch.vstack(trgt)
+        return (
+            model.best_train_metric.detach().cpu().numpy(),  # type: ignore
+            model.best_val_metric.detach().cpu().numpy(),  # type: ignore
+            trgt,
+            pred,
+        )
