@@ -1,4 +1,3 @@
-from torch import optim
 from torch.optim import Adam
 from torch.optim.lr_scheduler import (
     CosineAnnealingWarmRestarts,
@@ -47,11 +46,11 @@ def lr_scheduler_factory(optimizer, hparams, data_loader):
             verbose=True,
         )
     elif hparams.sched == "onecycle":
-        return optim.lr_scheduler.OneCycleLR(
+        return OneCycleLR(
             optimizer=optimizer,
             max_lr=hparams.lr,
             cycle_momentum=True,
-            pct_start=0.1,  # hparams.warmup_epochs / hparams.epochs,
+            pct_start=hparams.warmup_epochs / hparams.epochs,
             div_factor=25.0,
             final_div_factor=100000.0,
             steps_per_epoch=steps_per_epoch,
