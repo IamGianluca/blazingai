@@ -45,7 +45,8 @@ def train_loop(cfg: DictConfig, logger: Logger, const: ModuleType, train_routine
                 metrics.add(
                     trgt=trgt, pred=pred, val_score=val_score, trn_score=trn_score
                 )
-            except:
+            except Exception as e:
+                print(e)
                 pass
 
         # TODO: do not access _pred

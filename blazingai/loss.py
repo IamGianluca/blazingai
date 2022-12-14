@@ -14,10 +14,12 @@ def loss_factory(name):
         return MixUpCrossEntropy()
     elif name == "crossentropy":
         return nn.CrossEntropyLoss()
-    elif name == "focal_loss":
+    elif name == "focal":
         return BinaryFocalLossWithLogits()
     elif name == "mse":
         return nn.MSELoss()
+    elif name == "smooth_l1":
+        return nn.SmoothL1Loss()
     else:
         raise ValueError(f"{name} loss not supported yet.")
 
