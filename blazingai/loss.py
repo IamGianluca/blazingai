@@ -12,16 +12,56 @@ def loss_factory(name):
         return MixUpBCEWithLogitsLoss()
     elif name == "mixup_ce_with_logits":
         return MixUpCrossEntropy()
-    elif name == "crossentropy":
+    elif name == "cross_entropy":
         return nn.CrossEntropyLoss()
     elif name == "focal":
         return BinaryFocalLossWithLogits()
     elif name == "mse":
         return nn.MSELoss()
+    elif name == "rmse":
+        return RMSELoss()
+    elif name == "mcrmse":
+        return MCRMSELoss()
     elif name == "smooth_l1":
         return nn.SmoothL1Loss()
+    elif name == "squared_smooth_l1":
+        return Custom_SL1()
     else:
         raise ValueError(f"{name} loss not supported yet.")
+
+
+class MCRMSELoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, outputs, targets):
+        colwise_mse = torch.mean(torch.square(targets - outputs), dim=0)
+        loss = torch.mean(torch.sqrt(colwise_mse), dim=0)
+        return loss
+
+
+class RMSELoss(nn.Module):
+    def __init__(self, eps=1e-9):
+        super().__init__()
+        self.mse = nn.MSELoss()
+        self.eps = eps
+
+    def forward(self, yhat, y):
+        loss = torch.sqrt(self.mse(yhat, y) + self.eps)
+        return loss
+
+
+class Custom_SL1(nn.Module):
+    def __init__(self, reduction="mean", eps=1e-9):
+        super().__init__()
+        self.mse = nn.SmoothL1Loss(reduction="mean")
+        self.reduction = reduction
+        self.eps = eps
+
+    def forward(self, y_pred, y_true):
+        loss = torch.sqrt(self.mse(y_pred, y_true) + self.eps)
+        loss = loss.mean()
+        return loss
 
 
 class BinaryFocalLossWithLogits(nn.Module):

@@ -154,6 +154,7 @@ class TextClassifier(pl.LightningModule):
     def __init__(self, cfg: DictConfig):
         super().__init__()
         self.save_hyperparameters(cfg)
+
         self.backbone = AutoModel.from_pretrained(self.hparams.model_name)  # type: ignore
         self.head = nn.Sequential(
             nn.LazyLinear(128),
@@ -161,6 +162,13 @@ class TextClassifier(pl.LightningModule):
             nn.Linear(128, 64),
             nn.Linear(64, self.hparams.out_nodes),  # type: ignore
         )
+
+        self.yrange = False
+        try:
+            self.ymin, self.ymax = self.hparams.yrange  # type: ignore
+            self.yrange = True
+        except Exception as e:
+            pass
 
         self.train_metric = metric_factory(cfg=cfg)
         self.val_metric = metric_factory(cfg=cfg)
@@ -172,6 +180,8 @@ class TextClassifier(pl.LightningModule):
             input_ids=x["input_ids"], attention_mask=x["attention_mask"]
         ).last_hidden_state
         x = self.head(x)
+        if self.yrange:  # type: ignore
+            x = torch.sigmoid(x) * (self.max - self.min) + self.min
         return x
 
     def training_step(self, batch, batch_idx):

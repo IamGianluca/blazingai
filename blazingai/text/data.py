@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import lightning as pl
+from lightning.pytorch.core.saving import DictConfig
 import pandas as pd
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
@@ -18,6 +19,7 @@ class TextDataModule(pl.LightningDataModule):
         fold: int,
         data_path: Path,
         bs: int,
+        cfg: DictConfig
     ):
         super().__init__()
         self.model_name_or_path = model_name_or_path
@@ -28,6 +30,7 @@ class TextDataModule(pl.LightningDataModule):
             self.model_name_or_path, use_fast=True
         )
         self.bs = bs
+        self.cfg = cfg
 
     def setup(self, stage: Optional[str] = None) -> None:
         """How to split, define dataset, etc..."""
@@ -46,11 +49,16 @@ class TextDataModule(pl.LightningDataModule):
         else:
             raise ValueError(f"stage `{stage}` currently not supported")
 
-        self.ds_encoded = ds.with_format("torch").map(self.encode)
+        self.ds_encoded = ds.with_format("torch").map(self._encode)
 
-    def encode(self, examples):
+    def _encode(self, examples):
         text = examples["full_text"]
-        encoding = self.tokenizer(text, padding="max_length", truncation=True)
+        encoding = self.tokenizer(
+            text,
+            padding=self.cfg.padding, 
+            truncation=self.cfg.truncation, 
+            max_length=self.cfg.max_length
+        )
         encoding["labels"] = examples["labels"].tolist()
         return encoding
 
