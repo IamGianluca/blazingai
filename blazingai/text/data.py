@@ -57,7 +57,7 @@ class TextDataModule(pl.LightningDataModule):
             text,
             padding=self.cfg.padding, 
             truncation=self.cfg.truncation, 
-            max_length=self.cfg.max_length
+            max_length=self.cfg.max_length if hasattr(self.cfg, "max_length") else None,
         )
         encoding["labels"] = examples["labels"].tolist()
         return encoding
