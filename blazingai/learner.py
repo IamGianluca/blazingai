@@ -181,7 +181,7 @@ class TextClassifier(pl.LightningModule):
         ).last_hidden_state
         x = self.head(x)
         if self.yrange:  # type: ignore
-            x = torch.sigmoid(x) * (self.max - self.min) + self.min
+            x = torch.sigmoid(x) * (self.ymax - self.ymin) + self.ymin
         return x
 
     def training_step(self, batch, batch_idx):
