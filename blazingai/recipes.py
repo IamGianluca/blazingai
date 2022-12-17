@@ -151,6 +151,7 @@ def text_classification_recipe(
         trgt_cols=const.trgt_cols,
         bs=cfg.bs,
         fold=cfg.fold,
+        cfg=cfg,
     )
     model = TextClassifier(cfg=cfg)
 

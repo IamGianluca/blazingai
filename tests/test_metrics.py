@@ -1,5 +1,6 @@
 import pytest
 import torch
+from blazingai.metrics import MeanColumnwiseRootMeanSquaredError
 
 from torchmetrics.regression.mse import MeanSquaredError
 
@@ -21,3 +22,13 @@ def test_mse_across_batches(squared, result):
     # then
     metric = metric_fn.compute()
     assert metric.allclose(torch.tensor(result))
+
+
+def test_mcrmse():
+    trgt = torch.tensor([[1.0, 0.9], [0.95, 1.0]])
+    pred = torch.tensor([[0.8, 1.1], [0.95, 1.0]])
+
+    metric_fn = MeanColumnwiseRootMeanSquaredError()
+    metric_fn.update(pred, trgt)
+    metric = metric_fn.compute()
+    assert metric.allclose(torch.tensor(0.14142135))
