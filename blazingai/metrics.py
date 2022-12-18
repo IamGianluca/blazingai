@@ -1,4 +1,5 @@
 from typing import Any, Callable, Optional
+from joblib.parallel import FallbackToBackend
 
 import numpy as np
 import torch
@@ -17,28 +18,17 @@ def compute_oof_metric(cfg: DictConfig, y_true, y_pred) -> np.float32:
 
 
 class MeanColumnwiseRootMeanSquaredError(Metric):
-
-    is_differentiable: bool = True
-    higher_is_better: bool = False
-    full_state_update: bool = False
-    sum_squared_error: Tensor
-    total: Tensor
+    is_differentiable = False
+    higher_is_better = False
+    full_state_update = False
 
     def __init__(
         self,
-        compute_on_step: bool = False,
-        dist_sync_on_step: bool = False,
-        process_group: Optional[Any] = None,
-        dist_sync_fn: Optional[Callable] = None,
     ) -> None:
         super().__init__(
-            compute_on_step=compute_on_step,
-            dist_sync_on_step=dist_sync_on_step,
-            process_group=process_group,
-            dist_sync_fn=dist_sync_fn,
         )
-        self.target = torch.empty(0).to(self.device)
-        self.preds = torch.empty(0).to(self.device)
+        self.target = torchmetrics.CatMetric()
+        self.preds = torchmetrics.CatMetric()
 
     def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore
         """Update state with predictions and targets.
@@ -46,17 +36,13 @@ class MeanColumnwiseRootMeanSquaredError(Metric):
             preds: Predictions from model
             target: Ground truth values
         """
-        self.target = torch.cat([self.target, target], 0)
-        self.preds = torch.cat([self.preds, preds], 0)
+        self.target.update(target)
+        self.preds.update(preds)
 
     def compute(self) -> Tensor:
         """Computes mean squared error over state."""
-        preds = self.preds
-        target = self.target
-
-        # reset for next epoch
-        self.preds = torch.empty(0).to(self.device)
-        self.target = torch.empty(0).to(self.device)
+        preds = self.preds.compute()
+        target = self.target.compute()
 
         rmse_scores = []
         for i in range(2):
