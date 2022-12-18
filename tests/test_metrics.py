@@ -24,9 +24,12 @@ def test_mse_across_batches(squared, result):
     assert metric.allclose(torch.tensor(result))
 
 
-def test_mcrmse():
-    trgt = torch.tensor([[1.0, 0.9], [0.95, 1.0]])
-    pred = torch.tensor([[0.8, 1.1], [0.95, 1.0]])
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_mcrmse(device):
+    if device == "cuda" and not torch.cuda.is_available():
+        pytest.skip("CUDA is not available. Skipping unit test case.")
+    trgt = torch.tensor([[1.0, 0.9], [0.95, 1.0]]).to(device)
+    pred = torch.tensor([[0.8, 1.1], [0.95, 1.0]]).to(device)
 
     metric_fn = MeanColumnwiseRootMeanSquaredError()
     metric_fn.update(pred, trgt)
