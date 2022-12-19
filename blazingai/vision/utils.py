@@ -57,9 +57,7 @@ def plot_batches_detection(dl: DataLoader, n_batches: int = 1, preds=None):
 
         for image, target in zip(images, targets):
             boxes = target["boxes"]
-            image_with_boxes = _add_bbox_to_image_tensor(
-                image, boxes, color="red"
-            )
+            image_with_boxes = _add_bbox_to_image_tensor(image, boxes, color="red")
             images_with_bboxes.append(image_with_boxes)
             true_labels.append(target["labels"][0])
 

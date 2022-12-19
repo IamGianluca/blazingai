@@ -30,9 +30,7 @@ def _parallel_by_dir(dirs: List, in_path: Path, out_path: Path) -> None:
 def _convert_one_dir(dir_path: Path, in_path: Path, out_path: Path):
     img_paths = list(dir_path.rglob("*.dcm"))
     for img_path in img_paths:
-        _convert_one_dicom_img(
-            in_path=in_path, out_path=out_path, img_path=img_path
-        )
+        _convert_one_dicom_img(in_path=in_path, out_path=out_path, img_path=img_path)
 
 
 def _parallel_by_file(in_path: Path, out_path: Path) -> None:
@@ -47,18 +45,12 @@ def _parallel_by_file(in_path: Path, out_path: Path) -> None:
     )
 
 
-def _convert_one_dicom_img(
-    img_path: Path, in_path: Path, out_path: Path
-) -> None:
-    img_array = dicom_to_numpy(
-        img_path=img_path, voi_lut=True, fix_monochrome=True
-    )
+def _convert_one_dicom_img(img_path: Path, in_path: Path, out_path: Path) -> None:
+    img_array = dicom_to_numpy(img_path=img_path, voi_lut=True, fix_monochrome=True)
     img = Image.fromarray(img_array)
 
     fpath = Path(
-        str(img_path)
-        .replace(str(in_path), str(out_path))
-        .replace("dcm", "jpg")
+        str(img_path).replace(str(in_path), str(out_path)).replace("dcm", "jpg")
     )
     parent = fpath.parents[0]
     if not parent.exists():

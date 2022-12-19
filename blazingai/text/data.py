@@ -3,10 +3,10 @@ from pathlib import Path
 from typing import List, Optional
 
 import lightning as pl
-from lightning.pytorch.core.saving import DictConfig
 import pandas as pd
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
+from lightning.pytorch.core.saving import DictConfig
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer
 
@@ -19,7 +19,7 @@ class TextDataModule(pl.LightningDataModule):
         fold: int,
         data_path: Path,
         bs: int,
-        cfg: DictConfig
+        cfg: DictConfig,
     ):
         super().__init__()
         self.model_name_or_path = model_name_or_path
@@ -55,8 +55,8 @@ class TextDataModule(pl.LightningDataModule):
         text = examples["full_text"]
         encoding = self.tokenizer(
             text,
-            padding=self.cfg.padding, 
-            truncation=self.cfg.truncation, 
+            padding=self.cfg.padding,
+            truncation=self.cfg.truncation,
             max_length=self.cfg.max_length if hasattr(self.cfg, "max_length") else None,
         )
         encoding["labels"] = examples["labels"].tolist()
