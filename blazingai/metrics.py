@@ -1,9 +1,9 @@
 from typing import Any, Callable, Optional
-from joblib.parallel import FallbackToBackend
 
 import numpy as np
 import torch
 import torchmetrics
+from joblib.parallel import FallbackToBackend
 from omegaconf import DictConfig
 from torch import Tensor
 from torchmetrics.functional.regression.mse import mean_squared_error
@@ -25,8 +25,7 @@ class MeanColumnwiseRootMeanSquaredError(Metric):
     def __init__(
         self,
     ) -> None:
-        super().__init__(
-        )
+        super().__init__()
         self.target = torchmetrics.CatMetric()
         self.preds = torchmetrics.CatMetric()
 

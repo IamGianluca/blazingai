@@ -3,14 +3,14 @@ from typing import Any, List, Optional
 import lightning as pl
 import timm
 import torch
+from omegaconf import DictConfig
+from torch import nn
+from transformers import AutoModel
 
 from blazingai.loss import loss_factory
 from blazingai.metrics import metric_factory
 
 from blazingai.optim import lr_scheduler_factory, optimizer_factory
-from omegaconf import DictConfig
-from torch import nn
-from transformers import AutoModel
 
 
 class ImageClassifier(pl.LightningModule):

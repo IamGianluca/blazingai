@@ -17,9 +17,7 @@ def resize_images_from_folder(in_path: Path, out_path: Path, sz: int):
     pool.map(routine, tqdm(fnames))
 
 
-def resize_image_from_folder(
-    fname: str, sz: int, in_path: Path, out_path: Path
-):
+def resize_image_from_folder(fname: str, sz: int, in_path: Path, out_path: Path):
     img = Image.open(in_path / fname)
     try:
         resized_img = resize(img=img, sz=sz)
@@ -31,9 +29,7 @@ def resize_image_from_folder(
 
 # TODO: investigate if this function is still useful as it is not used anywhere
 # else in the codebase
-def resize_new(
-    img: Image, sz: int, resample=Image.LANCZOS, keep_ratio: bool = True
-):
+def resize_new(img: Image, sz: int, resample=Image.LANCZOS, keep_ratio: bool = True):
     """Credits: https://www.kaggle.com/xhlulu/vinbigdata-process-and-resize-to-image"""
     if keep_ratio:
         img.thumbnail((sz, sz), resample)

@@ -98,12 +98,8 @@ class TimeSeriesSplit(_BaseKFold):
         train_start, train_end = self._get_train_start_end_dates(
             self.method, first, step
         )
-        valid_start = train_end + np.timedelta64(
-            self.forecasting_horizon + 1, "D"
-        )
-        valid_end = valid_start + np.timedelta64(
-            self.forecasting_window - 1, "D"
-        )
+        valid_start = train_end + np.timedelta64(self.forecasting_horizon + 1, "D")
+        valid_end = valid_start + np.timedelta64(self.forecasting_window - 1, "D")
         return [train_start, train_end, valid_start, valid_end]
 
     def _is_valid_df(self, X: pd.DataFrame):
@@ -141,9 +137,7 @@ class TimeSeriesSplit(_BaseKFold):
         first, last = ar.min(), ar.max()
         days = (last - first).days + 1  # incl. last day
         required_days = ((self.n_splits - 1) * self.sliding_steps) + (
-            self.training_window
-            + self.forecasting_horizon
-            + self.forecasting_window
+            self.training_window + self.forecasting_horizon + self.forecasting_window
         )
         if required_days > days:
             raise ValueError(
@@ -151,21 +145,15 @@ class TimeSeriesSplit(_BaseKFold):
                 f"{required_days} > {days}",
             )
 
-    def _get_train_start_end_dates(
-        self, method: str, first: pd.Timestamp, step: int
-    ):
+    def _get_train_start_end_dates(self, method: str, first: pd.Timestamp, step: int):
         """To get the start and end date for each period.
         Args:
             first: start date for each training period.
             step: number identifying the n_split
         """
         if method == "sliding":
-            train_start = first + np.timedelta64(
-                self.sliding_steps * step, "D"
-            )
-            train_end = train_start + np.timedelta64(
-                self.training_window - 1, "D"
-            )
+            train_start = first + np.timedelta64(self.sliding_steps * step, "D")
+            train_end = train_start + np.timedelta64(self.training_window - 1, "D")
         else:
             train_start = first
             train_end = (
