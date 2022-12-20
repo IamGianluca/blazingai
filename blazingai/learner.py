@@ -5,7 +5,7 @@ import timm
 import torch
 from omegaconf import DictConfig
 from torch import nn
-from transformers import AutoModel
+from transformers import AutoConfig, AutoModel
 
 from blazingai.loss import loss_factory
 from blazingai.metrics import metric_factory
@@ -154,33 +154,47 @@ class TextClassifier(pl.LightningModule):
     def __init__(self, cfg: DictConfig):
         super().__init__()
         self.save_hyperparameters(cfg)
-
-        self.backbone = AutoModel.from_pretrained(self.hparams.model_name)  # type: ignore
-        self.head = nn.Sequential(
-            nn.LazyLinear(128),
-            nn.Dropout(0.1),
-            nn.Linear(128, 64),
-            nn.Linear(64, self.hparams.out_nodes),  # type: ignore
+        self.config = AutoConfig.from_pretrained(
+            self.hparams.model_name,  # type: ignore
+            output_hidden_states=True,
         )
+        self.config.update(
+            {
+                "hidden_dropout_prob": 0.0,
+                "attention_probs_dropout_prob": 0.0,
+            }
+        )
+        self.backbone = AutoModel.from_pretrained(
+            self.hparams.model_name,  # type: ignore
+            config=self.config,
+        )
+        self.dropout = nn.Dropout(self.hparams.drop) # type: ignore
+        self.pooling_params = {"pooling_name": "AttentionHead"}
+        self.pooling_params.update(
+            {
+                "in_features": self.config.hidden_size,
+                "out_features": self.config.hidden_size,
+            }
+        )
+        self.pooling = NLPPooling(**self.pooling_params)
+        self.head = nn.LazyLinear(self.hparams.out_nodes)  # type: ignore
 
-        self.yrange = False
-        try:
+        if hasattr(self.hparams, "yrange"):
             self.ymin, self.ymax = self.hparams.yrange  # type: ignore
-            self.yrange = True
-        except Exception as e:
-            pass
 
         self.train_metric = metric_factory(cfg=cfg)
         self.val_metric = metric_factory(cfg=cfg)
         self.best_train_metric = None
         self.best_val_metric = None
 
-    def forward(self, x):
+    def forward(self, batch):
         x = self.backbone(
-            input_ids=x["input_ids"], attention_mask=x["attention_mask"]
+            input_ids=batch["input_ids"], attention_mask=batch["attention_mask"]
         ).last_hidden_state
+        x = self.dropout(x)  # bs x token_size x emb_size
+        x = self.pooling(x, batch["attention_mask"])
         x = self.head(x)
-        if self.yrange:  # type: ignore
+        if hasattr(self.hparams, "yrange"):
             x = torch.sigmoid(x) * (self.ymax - self.ymin) + self.ymin
         return x
 
@@ -204,7 +218,7 @@ class TextClassifier(pl.LightningModule):
         return loss
 
     def _step(self, x, target):
-        preds = self(x)[:, 0, :]  # TODO: check this
+        preds = self(x)
         # TODO: handle logit vs. no logit case for both loss and preds
         loss = self._compute_loss(preds=preds, target=target)
         return loss, target, preds
@@ -220,7 +234,7 @@ class TextClassifier(pl.LightningModule):
 
     def predict_step(self, batch, batch_idx) -> torch.tensor:
         x = batch
-        y_hat = self(x)[:, 0, :]
+        y_hat = self(x)
         return y_hat
 
     def configure_optimizers(self):
@@ -261,3 +275,55 @@ class TextClassifier(pl.LightningModule):
             return new_metric < self.best_val_metric
         else:
             raise ValueError("metric_mode can only be min or max")
+
+
+class AttentionHead(nn.Module):
+    def __init__(self, in_features, hidden_dim):
+        super().__init__()
+        self.in_features = in_features
+        self.middle_features = hidden_dim
+        self.W = nn.Linear(in_features, hidden_dim)
+        self.V = nn.Linear(hidden_dim, 1)
+        self.out_features = hidden_dim
+
+    def forward(self, features, attention_mask):
+        weights_mask = attention_mask.unsqueeze(-1)
+        att = torch.tanh(self.W(features))
+        score = self.V(att)
+        score[attention_mask == 0] = -1e4
+        attention_weights = torch.softmax(score, dim=1)
+        context_vector = torch.sum(attention_weights * weights_mask * features, dim=1)
+        return context_vector
+
+
+class NLPPooling(nn.Module):
+    def __init__(self, **kwargs):
+        super().__init__()
+        self.__dict__.update(kwargs)
+        if self.pooling_name == "AttentionHead":
+            self.pooler = AttentionHead(self.in_features, self.out_features)
+        elif self.pooling_name not in ("CLS", ""):
+            self.pooler = eval(self.pooling_name)(**self.params)
+
+        print(f"Pooling: {self.pooling_name}")
+
+    def forward(self, last_hidden_state, attention_mask):
+
+        if self.pooling_name in ["MeanPooling", "MaxPooling", "MinPooling"]:
+            # Pooling between cls and sep / cls and sep embedding are not included
+            # last_hidden_state = self.pooler(last_hidden_state[:,1:-1,:],attention_mask[:,1:-1])
+            last_hidden_state = self.pooler(last_hidden_state, attention_mask)
+        elif self.pooling_name == "CLS":
+            # Use only cls embedding
+            last_hidden_state = last_hidden_state[:, 0, :]
+        elif self.pooling_name == "GeMText":
+            # Use Gem Pooling on all tokens
+            last_hidden_state = self.pooler(last_hidden_state, attention_mask)
+
+        elif self.pooling_name == "AttentionHead":
+            last_hidden_state = self.pooler(last_hidden_state, attention_mask)
+        else:
+            # No pooling
+            last_hidden_state = last_hidden_state
+            # print(f"{self.pooling_name} not implemented")
+        return last_hidden_state
