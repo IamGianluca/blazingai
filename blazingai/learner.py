@@ -168,7 +168,7 @@ class TextClassifier(pl.LightningModule):
             self.hparams.model_name,  # type: ignore
             config=self.config,
         )
-        self.dropout = nn.Dropout(self.hparams.drop) # type: ignore
+        self.dropout = nn.Dropout(self.hparams.drop)  # type: ignore
         self.pooling_params = {"pooling_name": "AttentionHead"}
         self.pooling_params.update(
             {

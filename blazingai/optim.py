@@ -1,10 +1,10 @@
-from torch.optim import Adam
+from torch.optim import Adam, AdamW
 from torch.optim.lr_scheduler import (
     CosineAnnealingWarmRestarts,
     OneCycleLR,
     ReduceLROnPlateau,
 )
-from transformers.optimization import AdamW, get_cosine_schedule_with_warmup
+from transformers.optimization import get_cosine_schedule_with_warmup
 
 
 def optimizer_factory(params, hparams):
@@ -21,7 +21,6 @@ def optimizer_factory(params, hparams):
             betas=(0.9, 0.999),
             eps=1e-06,
             weight_decay=hparams.wd,
-            correct_bias=True,
         )
     # if hparams.opt == "sam":
     #     return SAM(
