@@ -11,6 +11,7 @@ from blazingai.loss import loss_factory
 from blazingai.metrics import metric_factory
 
 from blazingai.optim import lr_scheduler_factory, optimizer_factory
+from blazingai.text.reinitialize import reinit_autoencoder_model
 
 
 class ImageClassifier(pl.LightningModule):
@@ -168,6 +169,10 @@ class TextClassifier(pl.LightningModule):
             self.hparams.model_name,  # type: ignore
             config=self.config,
         )
+        if hasattr(self.hparams, "reinit_layers"):
+            self.backbone.encoder = reinit_autoencoder_model(
+                self.backbone.encoder, reinit_num_layers=self.hparams.reinit_layers
+            )
         self.dropout = nn.Dropout(self.hparams.drop)  # type: ignore
         self.pooling_params = {"pooling_name": "AttentionHead"}
         self.pooling_params.update(
