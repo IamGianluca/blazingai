@@ -63,7 +63,7 @@ def is_crossval(cfg: DictConfig) -> bool:
 
 
 def image_classification_recipe(
-    cfg: DictConfig, logger, const, utils
+    cfg: DictConfig, logger: Logger, const: ModuleType, utils: ModuleType
 ) -> Tuple[np.ndarray, np.ndarray, torch.Tensor, torch.Tensor]:
     df = pd.read_csv(const.train_folds_all_fpath)
     df_trn = df[df.kfold != cfg.fold].reset_index()
@@ -144,7 +144,7 @@ def log_mtrc(logger: Logger, metrics: CrossValMetrics) -> None:
 
 
 def text_classification_recipe(
-    cfg: DictConfig, const, logger
+    cfg: DictConfig, const: ModuleType, logger: Logger
 ) -> Tuple[np.ndarray, np.ndarray, torch.Tensor, torch.Tensor]:
     data = TextDataModule(
         model_name_or_path=cfg.model_name,

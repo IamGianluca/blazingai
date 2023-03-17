@@ -98,5 +98,7 @@ def metric_factory(cfg: DictConfig):
         return torchmetrics.MeanSquaredError(squared=False)
     elif cfg.metric == "mcrmse":
         return MeanColumnwiseRootMeanSquaredError()
+    elif cfg.metric == "f1":
+        return torchmetrics.F1Score()
     else:
         raise ValueError(f"{cfg.metric} is not supported yet.")
