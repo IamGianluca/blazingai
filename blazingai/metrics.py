@@ -1,11 +1,9 @@
-from typing import Any, Callable, Optional
-
 import numpy as np
 import torch
 import torchmetrics
-from joblib.parallel import FallbackToBackend
 from omegaconf import DictConfig
 from torch import Tensor
+from torchmetrics.classification.f_beta import MultilabelF1Score
 from torchmetrics.functional.regression.mse import mean_squared_error
 from torchmetrics.metric import Metric
 
@@ -44,7 +42,7 @@ class MeanColumnwiseRootMeanSquaredError(Metric):
         target = self.target.compute()
 
         rmse_scores = []
-        for i in range(2):
+        for _ in range(2):
             rmse_scores.append(
                 mean_squared_error(
                     preds=preds,
@@ -98,7 +96,9 @@ def metric_factory(cfg: DictConfig):
         return torchmetrics.MeanSquaredError(squared=False)
     elif cfg.metric == "mcrmse":
         return MeanColumnwiseRootMeanSquaredError()
-    elif cfg.metric == "f1":
-        return torchmetrics.F1Score()
+    elif cfg.metric == "multilabel_f1":
+        return MultilabelF1Score(
+            num_labels=cfg.num_labels, average="macro", threshold=cfg.threshold
+        )
     else:
         raise ValueError(f"{cfg.metric} is not supported yet.")
