@@ -3,7 +3,7 @@ import torch
 import torchmetrics
 from omegaconf import DictConfig
 from torch import Tensor
-from torchmetrics.classification.f_beta import MultilabelF1Score
+from torchmetrics.classification import MulticlassF1Score
 from torchmetrics.functional.regression.mse import mean_squared_error
 from torchmetrics.metric import Metric
 
@@ -96,9 +96,7 @@ def metric_factory(cfg: DictConfig):
         return torchmetrics.MeanSquaredError(squared=False)
     elif cfg.metric == "mcrmse":
         return MeanColumnwiseRootMeanSquaredError()
-    elif cfg.metric == "multilabel_f1":
-        return MultilabelF1Score(
-            num_labels=cfg.num_labels, average="macro", threshold=cfg.threshold
-        )
+    elif cfg.metric == "multiclass_f1_macro":
+        return MulticlassF1Score(average="macro", num_classes=2)
     else:
         raise ValueError(f"{cfg.metric} is not supported yet.")
