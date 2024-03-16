@@ -1,6 +1,7 @@
 # python cache and build
 __pycache__/
-ml.egg-info
+blazingai.egg-info/
+build/
 dist/
 
 # notebook cache
