@@ -81,7 +81,7 @@ class TimeSeriesSplit(_BaseKFold):
                 train_start.date().isoformat(),
                 train_end.date().isoformat(),
             ]
-            self.validation_date_ranges[f"period_" + str(step)] = [
+            self.validation_date_ranges["period_" + str(step)] = [
                 valid_start.date().isoformat(),
                 valid_end.date().isoformat(),
             ]
@@ -117,7 +117,6 @@ class TimeSeriesSplit(_BaseKFold):
             )
 
     def _if_date_otherthan_timestamp(self, X: pd.DataFrame):
-
         if not is_datetime64_ns_dtype(X[self.date_col_name]):
             raise ValueError(
                 f"{self.date_col_name} does not have datetime64[ns] format"

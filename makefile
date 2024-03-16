@@ -1,7 +1,9 @@
 format:
-	usort format . && \
-	black -l 79 .
+	ruff format .
 
+lint:
+	ruff check --fix 
+	
 install:
 	pip install -e .
 

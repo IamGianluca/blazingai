@@ -64,7 +64,6 @@ def get_cyclical_features(
     scaling_factor: int,
     drop_original_cols: bool = False,
 ) -> pd.DataFrame:
-
     for col_name in col_names:
         # make sure min value for column is 0 before applying sin/cos
         # transformation

@@ -35,9 +35,9 @@ def train_loop(cfg: DictConfig, logger: Logger, const: ModuleType, train_routine
 
         for current_fold in range(cfg.n_folds):
             cfg.fold = current_fold  # NOTE: reassigning value to existing member
-            print(f"\n#####################")
+            print("\n#####################")
             print(f"# FOLD {cfg.fold}")
-            print(f"#####################")
+            print("#####################")
 
             try:
                 trn_score, val_score, trgt, pred = train_routine(

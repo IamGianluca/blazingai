@@ -313,7 +313,6 @@ class NLPPooling(nn.Module):
         print(f"Pooling: {self.pooling_name}")
 
     def forward(self, last_hidden_state, attention_mask):
-
         if self.pooling_name in ["MeanPooling", "MaxPooling", "MinPooling"]:
             # Pooling between cls and sep / cls and sep embedding are not included
             # last_hidden_state = self.pooler(last_hidden_state[:,1:-1,:],attention_mask[:,1:-1])

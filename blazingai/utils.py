@@ -2,7 +2,6 @@ import argparse
 
 
 def dict_to_args(d: dict):
-
     args = argparse.Namespace()
 
     def dict_to_args_recursive(args, d, prefix=""):

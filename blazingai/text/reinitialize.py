@@ -22,9 +22,7 @@ def reinit_autoencoder_model(encoder, reinit_num_layers=0):
 
     if reinit_num_layers:
         for layer in encoder.layer[-reinit_num_layers:]:
-
             for module in layer.modules():
-
                 if isinstance(module, nn.Linear):
                     module.weight.data.normal_(
                         mean=0.0, std=encoder.config.initializer_range
