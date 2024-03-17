@@ -1,11 +1,11 @@
 ## Introduction
 
-A framework to accellerate the development cycle for ML projects.
+A framework to accelerate the development cycle for AI/ML projects.
 
 This project leverage several other excellent libraries:
 
 * [pytorch](https://github.com/pytorch/pytorch)
-* [pytorch-lightning](https://github.com/Lightning-AI/lightning)
+* [lightning](https://github.com/Lightning-AI/lightning)
 * [scikit-learn](https://github.com/scikit-learn/scikit-learn)
 * [timm](https://github.com/rwightman/pytorch-image-models)
 * [torchmetrics](https://github.com/Lightning-AI/metrics)
@@ -13,11 +13,11 @@ This project leverage several other excellent libraries:
 
 ## Installation
 
-The package is not yet published in pypi. We are considering doing that on a later stage, when the package is more mature.
+The package is not yet published in the Python Package Index (PyPI). We are considering doing that on a later stage, when the package is more mature.
 
-## Contribute
+## Contributing
 
-To contribute to the project, you can download the codebase and install the package in editable model with the following commands.
+To contribute to the project, you can download the codebase and install the library in editable mode with the following commands.
 
 ```
 $ git clone git@github.com:IamGianluca/ml.git
@@ -25,13 +25,18 @@ $ cd ml
 $ make install
 ```
 
-It is also recommended to also install the development dependencies with `pip install -r requirements-dev.txt`. This will allow you to run additional helper commands like `make test` and `make format`.
+After doing that, you will be able to run additional commands like `make test` and `make format`.
 
-When contributing to this repository, please use the following convention to label your commit messages.
+When contributing to this repository, please respect this naming convention to tag your commits:
 
-* `BUG`: bug fixing
-* `DEV`: development environment ― e.g., system dependencies
-* `DOC`: documentation
-* `ENH`: model architectures, feature engineering
-* `MAINT`: maintenance ― e.g., refactoring
-* `TST`: testing, continuous integration
+* API relevant changes:
+    * `feat`: Commits that add a new feature
+    * `fix`: Commits that fixes a bug
+* `refactor`: Commits that rewrite/restructure your code but does not change any behavior
+    * `perf`: Special `refactor` commits that improve performance
+* `style`: Commits that do not affect the meaning (white space, formatting, missing semi-colons, etc.)
+* `test`: Commits that add missing tests or correct existing tests
+* `docs`: Commits that affect documentation only
+* `build`: Commits that affect build components like build tool, CI pipeline, dependencies, project version, etc...
+* `ops`: Commits that affect operational components like infrastructure, deployment, backup, recovery, ...
+* `chore`: Miscellaneous commits e.g., modifying `.gitignore`
