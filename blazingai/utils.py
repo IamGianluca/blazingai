@@ -6,7 +6,7 @@ def dict_to_args(d: dict):
 
     def dict_to_args_recursive(args, d, prefix=""):
         for k, v in d.items():
-            if type(v) == dict:
+            if isinstance(v, dict):
                 dict_to_args_recursive(args, v, prefix=k)
             elif type(v) in [tuple, list]:
                 continue

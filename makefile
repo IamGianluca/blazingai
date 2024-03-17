@@ -12,4 +12,4 @@ mypy:
 
 test:
 	pytest -s . && \
-		mypy . --ignore-missing-imports --exclude build/
+	mypy . --ignore-missing-imports --exclude build/
