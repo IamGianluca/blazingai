@@ -3,6 +3,7 @@ __pycache__/
 blazingai.egg-info/
 build/
 dist/
+requirements.txt
 
 # notebook cache
 .ipynb_checkpoints/
