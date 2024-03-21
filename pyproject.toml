@@ -16,7 +16,7 @@ dependencies = [
   "tqdm>4.64.1",
   "transformers>4.24.0",
   "pandas>1.5.1",
-  "lightning>1.9.0",
+  "lightning>=2.2.0",
   "torch",
   "numpy",
   "datasets>2.7.1",
