@@ -172,6 +172,7 @@ def text_classification_recipe(
     )
     model = TextClassifier(cfg=cfg)
 
+    cbacks: List[Callback] = list()
     checkpoint_callback = callbacks.ModelCheckpoint(
         monitor="val_metric",
         mode=cfg.metric_mode,
@@ -179,9 +180,26 @@ def text_classification_recipe(
         filename=f"model_{cfg.name}_fold{cfg.fold}",
         save_weights_only=True,
     )
+    cbacks.append(checkpoint_callback)
     lr_callback = callbacks.LearningRateMonitor(
         logging_interval="step", log_momentum=True
     )
+    cbacks.append(lr_callback)
+
+    if cfg.auto_lr_find:
+        from lightning.pytorch.callbacks import LearningRateFinder
+
+        lr_finder_callback = LearningRateFinder()
+        cbacks.append(lr_finder_callback)
+
+    if cfg.auto_scale_batch_size:
+        from lightning.pytorch.callbacks import BatchSizeFinder
+
+        bs_finder_callback = BatchSizeFinder()
+        cbacks.append(bs_finder_callback)
+
+    progress_bar_callback = RichProgressBar()
+    cbacks.append(progress_bar_callback)
 
     trainer = pl.Trainer(
         accelerator="gpu",
@@ -189,32 +207,23 @@ def text_classification_recipe(
         devices=[0],
         precision=cfg.precision,
         overfit_batches=cfg.overfit_batches,
-        auto_lr_find=cfg.auto_lr,
         accumulate_grad_batches=cfg.accumulate_grad_batches,
-        auto_scale_batch_size=cfg.auto_batch_size,
         logger=logger,
-        callbacks=[checkpoint_callback, lr_callback, RichProgressBar()],
+        callbacks=cbacks,
     )
-    if cfg.auto_lr or cfg.auto_batch_size:
-        try:
-            trainer.tune(model, data)
-            return (None), (None), (None), (None)
-        except RuntimeError:
-            return (None), (None), (None), (None)
-    else:
-        trainer.fit(model, datamodule=data)
-        print_mtrc(cfg.metric, model.best_train_metric, model.best_val_metric)  # type: ignore
+    trainer.fit(model, datamodule=data)
+    print_mtrc(cfg.metric, model.best_train_metric, model.best_val_metric)  # type: ignore
 
-        pred = trainer.predict(model, datamodule=data, ckpt_path="best")
-        pred = torch.vstack(pred)  # type: ignore
+    pred = trainer.predict(model, datamodule=data, ckpt_path="best")
+    pred = torch.vstack(pred)  # type: ignore
 
-        trgt = []
-        for btch in data.predict_dataloader():
-            trgt.append(btch["labels"])
-        trgt = torch.vstack(trgt)
-        return (
-            model.best_train_metric.detach().cpu().numpy(),  # type: ignore
-            model.best_val_metric.detach().cpu().numpy(),  # type: ignore
-            trgt,
-            pred,
-        )
+    trgt = []
+    for btch in data.predict_dataloader():
+        trgt.append(btch["labels"])
+    trgt = torch.vstack(trgt)
+    return (
+        model.best_train_metric.detach().cpu().numpy(),  # type: ignore
+        model.best_val_metric.detach().cpu().numpy(),  # type: ignore
+        trgt,
+        pred,
+    )
