@@ -30,6 +30,7 @@ dev = [
   "ipdb",
   "mypy",
   "usort",
+  "pynvim",
 ]
 medical = [
   "pydicom>2.3.1",

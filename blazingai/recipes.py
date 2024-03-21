@@ -1,6 +1,6 @@
 from pathlib import Path
 from types import ModuleType
-from typing import Tuple
+from typing import List, Tuple
 
 import lightning as pl
 import numpy as np
@@ -16,6 +16,8 @@ from blazingai.vision.data import ImageDataModule
 
 from lightning.pytorch import callbacks
 from lightning.pytorch.callbacks import RichProgressBar
+
+from lightning.pytorch.callbacks.callback import Callback
 from lightning.pytorch.loggers import Logger
 from omegaconf import DictConfig, OmegaConf
 from timm.data import transforms_factory
@@ -97,6 +99,8 @@ def image_classification_recipe(
     )
 
     model = learner.ImageClassifier(cfg=cfg)
+
+    cbacks: List[Callback] = list()
     checkpoint_callback = callbacks.ModelCheckpoint(
         monitor="val_metric",
         mode=cfg.metric_mode,
@@ -104,9 +108,26 @@ def image_classification_recipe(
         filename=f"model_{cfg.name}_fold{cfg.fold}",
         save_weights_only=True,
     )
+    cbacks.append(checkpoint_callback)
     lr_callback = callbacks.LearningRateMonitor(
         logging_interval="step", log_momentum=True
     )
+    cbacks.append(lr_callback)
+
+    if cfg.auto_lr_find:
+        from lightning.pytorch.callbacks import LearningRateFinder
+
+        lr_finder_callback = LearningRateFinder()
+        cbacks.append(lr_finder_callback)
+
+    if cfg.auto_scale_batch_size:
+        from lightning.pytorch.callbacks import BatchSizeFinder
+
+        bs_finder_callback = BatchSizeFinder()
+        cbacks.append(bs_finder_callback)
+
+    progress_bar_callback = RichProgressBar()
+    cbacks.append(progress_bar_callback)
 
     trainer = pl.Trainer(
         accelerator="gpu",
@@ -114,27 +135,22 @@ def image_classification_recipe(
         devices=[0],
         precision=cfg.precision,
         overfit_batches=cfg.overfit_batches,
-        auto_lr_find=cfg.auto_lr,
         accumulate_grad_batches=cfg.accumulate_grad_batches,
-        auto_scale_batch_size=cfg.auto_batch_size,
         logger=logger,
-        callbacks=[checkpoint_callback, lr_callback, RichProgressBar()],
+        callbacks=cbacks,
     )
-    if cfg.auto_lr or cfg.auto_batch_size:
-        trainer.tune(model, data)
-    else:
-        trainer.fit(model, datamodule=data)
-        print_mtrc(cfg.metric, model.best_train_metric, model.best_val_metric)  # type: ignore
+    trainer.fit(model, datamodule=data)
+    print_mtrc(cfg.metric, model.best_train_metric, model.best_val_metric)  # type: ignore
 
-        trgt = df_val.loc[:, const.trgt_cols].values.tolist()
-        pred = trainer.predict(model, datamodule=data, ckpt_path="best")
-        pred = [p[0] * 100 for b in pred for p in b]  # type: ignore
-        return (
-            model.best_train_metric.detach().cpu().numpy(),  # type: ignore
-            model.best_val_metric.detach().cpu().numpy(),  # type: ignore
-            trgt,
-            pred,
-        )
+    trgt = df_val.loc[:, const.trgt_cols].values.tolist()
+    pred = trainer.predict(model, datamodule=data, ckpt_path="best")
+    pred = [p[0] * 100 for b in pred for p in b]  # type: ignore
+    return (
+        model.best_train_metric.detach().cpu().numpy(),  # type: ignore
+        model.best_val_metric.detach().cpu().numpy(),  # type: ignore
+        trgt,
+        pred,
+    )
 
 
 def log_mtrc(logger: Logger, metrics: CrossValMetrics) -> None:
