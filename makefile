@@ -13,5 +13,8 @@ mypy:
 test:
 	pytest
 
+coverage:
+	pytest --cov=blazingai tests
+
 static-checks:
 	mypy . --ignore-missing-imports --exclude build/
