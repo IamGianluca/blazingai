@@ -6,7 +6,7 @@ import lightning as pl
 import pandas as pd
 from datasets.arrow_dataset import Dataset
 from datasets.dataset_dict import DatasetDict
-from lightning.pytorch.core.saving import DictConfig
+from omegaconf import DictConfig
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer
 
