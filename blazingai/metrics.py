@@ -1,3 +1,5 @@
+from typing import List
+
 import numpy as np
 import torch
 import torchmetrics
@@ -57,10 +59,10 @@ class CrossValMetrics:
     def __init__(self, cfg: DictConfig) -> None:
         self.cfg = cfg
         self.metric = cfg.metric
-        self._trgt = []
-        self._pred = []
-        self._val_scores = []
-        self._trn_scores = []
+        self._trgt: List[torch.Tensor] = []
+        self._pred: List[torch.Tensor] = []
+        self._val_scores: List[torch.Tensor] = []
+        self._trn_scores: List[torch.Tensor] = []
 
     @property
     def trn_metric(self):
