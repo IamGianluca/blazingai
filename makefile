@@ -11,7 +11,7 @@ mypy:
 	mypy src/ --ignore-missing-imports
 
 test:
-	pytest -s .
+	pytest
 
 lint:
 	mypy . --ignore-missing-imports --exclude build/

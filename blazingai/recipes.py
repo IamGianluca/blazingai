@@ -217,10 +217,10 @@ def text_classification_recipe(
     pred = trainer.predict(model, datamodule=data, ckpt_path="best")
     pred = torch.vstack(pred)  # type: ignore
 
-    trgt = []
+    trgt_list = []
     for btch in data.predict_dataloader():
-        trgt.append(btch["labels"])
-    trgt = torch.vstack(trgt)
+        trgt_list.append(btch["labels"])
+    trgt = torch.vstack(trgt_list)
     return (
         model.best_train_metric.detach().cpu().numpy(),  # type: ignore
         model.best_val_metric.detach().cpu().numpy(),  # type: ignore
