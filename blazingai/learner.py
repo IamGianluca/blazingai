@@ -3,15 +3,15 @@ from typing import Any, List, Optional
 import lightning as pl
 import timm
 import torch
-from omegaconf import DictConfig
-from torch import nn
-from transformers import AutoConfig, AutoModel
 
 from blazingai.loss import loss_factory
 from blazingai.metrics import metric_factory
 
 from blazingai.optim import lr_scheduler_factory, optimizer_factory
 from blazingai.text.reinitialize import reinit_autoencoder_model
+from omegaconf import DictConfig
+from torch import nn
+from transformers import AutoConfig, AutoModel
 
 
 class ImageClassifier(pl.LightningModule):
@@ -237,7 +237,7 @@ class TextClassifier(pl.LightningModule):
         self.log("val_metric", self.val_metric.compute())
         self._register_best_train_and_val_metrics()
 
-    def predict_step(self, batch, batch_idx) -> torch.tensor:
+    def predict_step(self, batch, batch_idx) -> torch.Tensor:
         x = batch
         y_hat = self(x)
         return y_hat
