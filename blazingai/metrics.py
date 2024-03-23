@@ -4,7 +4,6 @@ import numpy as np
 import torch
 import torchmetrics
 from omegaconf import DictConfig
-from torch import Tensor
 from torchmetrics.classification import MulticlassF1Score
 from torchmetrics.functional.regression.mse import mean_squared_error
 from torchmetrics.metric import Metric
@@ -29,7 +28,7 @@ class MeanColumnwiseRootMeanSquaredError(Metric):
         self.target = torchmetrics.CatMetric()
         self.preds = torchmetrics.CatMetric()
 
-    def update(self, preds: Tensor, target: Tensor) -> None:  # type: ignore
+    def update(self, preds: torch.Tensor, target: torch.Tensor) -> None:  # type: ignore
         """Update state with predictions and targets.
         Args:
             preds: Predictions from model
@@ -38,7 +37,7 @@ class MeanColumnwiseRootMeanSquaredError(Metric):
         self.target.update(target)
         self.preds.update(preds)
 
-    def compute(self) -> Tensor:
+    def compute(self) -> torch.Tensor:
         """Computes mean squared error over state."""
         preds = self.preds.compute()
         target = self.target.compute()
@@ -55,7 +54,7 @@ class MeanColumnwiseRootMeanSquaredError(Metric):
         return torch.mean(torch.tensor(rmse_scores))
 
 
-class CrossValMetrics:
+class CrossValMetricsTracker:
     def __init__(self, cfg: DictConfig) -> None:
         self.cfg = cfg
         self.metric = cfg.metric
@@ -78,7 +77,13 @@ class CrossValMetrics:
             compute_oof_metric(cfg=self.cfg, y_pred=self._pred, y_true=self._trgt)
         )
 
-    def add(self, trgt, pred, val_score, trn_score):
+    def add(
+        self,
+        trgt: List[torch.Tensor],  # y_true test set
+        pred: List[torch.Tensor],  # y_pred test set
+        val_score: torch.Tensor,
+        trn_score: torch.Tensor,
+    ):
         self._trgt.extend(trgt)
         self._pred.extend(pred)
         self._val_scores.append(val_score)
@@ -86,9 +91,12 @@ class CrossValMetrics:
 
 
 def metric_factory(cfg: DictConfig):
-    if cfg.metric == "auc":
+    if cfg.metric == "binary_accuracy":
+        return torchmetrics.Accuracy(task="binary")
+    if cfg.metric == "binary_auc":
         # return torchmetrics.AUROC(pos_label=1)
         return torchmetrics.AUROC(
+            task="binary",
             pos_label=1,
             num_classes=cfg.num_classes,
         )

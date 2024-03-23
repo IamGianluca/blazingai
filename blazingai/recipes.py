@@ -10,7 +10,7 @@ import torch
 from blazingai import learner
 from blazingai.io import print_mtrc, save_mtrc, save_pred
 from blazingai.learner import TextClassifier
-from blazingai.metrics import CrossValMetrics
+from blazingai.metrics import CrossValMetricsTracker
 from blazingai.text.data import TextDataModule
 from blazingai.vision.data import ImageDataModule
 
@@ -33,7 +33,7 @@ def train_loop(cfg: DictConfig, logger: Logger, const: ModuleType, train_routine
     pl.seed_everything(seed=cfg.seed, workers=True)
 
     if is_crossval(cfg=cfg):
-        metrics = CrossValMetrics(cfg=cfg)
+        metrics = CrossValMetricsTracker(cfg=cfg)
 
         for current_fold in range(cfg.n_folds):
             cfg.fold = current_fold  # NOTE: reassigning value to existing member
@@ -153,7 +153,7 @@ def image_classification_recipe(
     )
 
 
-def log_mtrc(logger: Logger, metrics: CrossValMetrics) -> None:
+def log_mtrc(logger: Logger, metrics: CrossValMetricsTracker) -> None:
     logger.log_metrics({"cv_trn_metric": metrics.trn_metric})
     logger.log_metrics({"cv_val_metric": metrics.val_metric})
     logger.log_metrics({"oof_val_metric": metrics.oof_metric})

@@ -13,5 +13,5 @@ mypy:
 test:
 	pytest
 
-lint:
+static-checks:
 	mypy . --ignore-missing-imports --exclude build/
