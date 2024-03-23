@@ -175,6 +175,11 @@ class ImageDataModule(pl.LightningDataModule):
 
     def setup(self, stage: Optional[str] = None) -> None:
         if stage == "fit":
+            if self.trn_img_paths is None:
+                raise ValueError("Missing trn_img_path")
+            if self.val_img_paths is None:
+                raise ValueError("Missing val_img_path")
+
             self.trn_ds = get_dataset[self.task](
                 img_paths=self.trn_img_paths,
                 trgt=self.trn_trgt,
@@ -186,11 +191,12 @@ class ImageDataModule(pl.LightningDataModule):
                 aug=self.val_aug,
             )
         elif stage == "predict":
-            if self.tst_img_paths:
-                self.test_ds = get_dataset[self.task](
-                    img_paths=self.tst_img_paths,
-                    aug=self.tst_aug,
-                )
+            if self.tst_img_paths is None:
+                raise ValueError("Missing tst_img_paths")
+            self.test_ds = get_dataset[self.task](
+                img_paths=self.tst_img_paths,
+                aug=self.tst_aug,
+            )
         else:
             raise ValueError(f"stage `{stage}` currently not supported")
 
