@@ -1,8 +1,6 @@
 from pathlib import Path
 
 import pytest
-
-pytest.importorskip("pydicom")
 from blazingai.vision.convert import convert_dicom2jpg
 from pydicom import dcmread
 
