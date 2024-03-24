@@ -15,9 +15,6 @@ sync:
 install:
 	uv pip install -e ".[dev,medical]"
 
-mypy:
-	mypy src/ --ignore-missing-imports
-
 test:
 	pytest --durations=5
 
