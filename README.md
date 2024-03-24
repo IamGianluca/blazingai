@@ -20,9 +20,11 @@ The package is not yet published in the Python Package Index (PyPI). We are cons
 To contribute to the project, you can download the codebase and install the library in editable mode with the following commands.
 
 ```
-$ git clone git@github.com:IamGianluca/ml.git
-$ cd ml
-$ make install
+git clone git@github.com:IamGianluca/blazingai.git
+cd blazingai
+uv venv
+source .venv/bin/activate
+make rebuild
 ```
 
 After doing that, you will be able to run additional commands like `make test` and `make format`.
@@ -37,6 +39,6 @@ When contributing to this repository, please respect this naming convention to t
 * `style`: Commits that do not affect the meaning (white space, formatting, missing semi-colons, etc.)
 * `test`: Commits that add missing tests or correct existing tests
 * `docs`: Commits that affect documentation only
-* `build`: Commits that affect build components like build tool, CI pipeline, dependencies, project version, etc...
-* `ops`: Commits that affect operational components like infrastructure, deployment, backup, recovery, ...
+* `build`: Commits that affect build components like build tool, CI pipeline, dependencies, project version, etc.
+* `ops`: Commits that affect operational components like infrastructure, deployment, backup, recovery, etc.
 * `chore`: Miscellaneous commits e.g., modifying `.gitignore`
