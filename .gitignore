@@ -7,10 +7,5 @@ dist/
 # notebook cache
 .ipynb_checkpoints/
 
-# IDE
-.vscode/
-.vim/
-
-# wait until bug is fixed on lightning/pydantic
-# ImportError: cannot import name 'Schema' from 'pydantic'
-tests/test_utils.py
+# coverage files
+.coverage*
