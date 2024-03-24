@@ -19,7 +19,7 @@ mypy:
 	mypy src/ --ignore-missing-imports
 
 test:
-	pytest
+	pytest --durations=5
 
 coverage:
 	pytest --cov=blazingai
