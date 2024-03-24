@@ -25,4 +25,4 @@ coverage:
 	pytest --cov=blazingai
 
 static-checks:
-	mypy . --ignore-missing-imports --exclude build/
+	mypy . --ignore-missing-imports --exclude build/ --exclude blazingai.egg-info/
