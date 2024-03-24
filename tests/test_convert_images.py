@@ -15,6 +15,7 @@ def dicom_file(tmpdir_factory):
     return Path(fpath)
 
 
+@pytest.mark.slow
 def test_happy_case(dicom_file, tmp_path):
     # given
     assert dicom_file.exists()
