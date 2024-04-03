@@ -35,13 +35,13 @@ def _boxes_json2array(
     return result
 
 
-def _boxes_coco2pascalvoc(boxes: List[torch.Tensor]) -> List[torch.Tensor]:
+def _boxes_coco2pascalvoc(boxes: torch.Tensor) -> torch.Tensor:
     """[x_min, y_min, width, height] -> [x_min, y_min, x_max, y_max]"""
     boxes[:, 2:] = boxes[:, :2] + boxes[:, 2:]
     return boxes
 
 
-def _boxes_pascalvoc2coco(boxes: List[torch.Tensor]) -> List[torch.Tensor]:
+def _boxes_pascalvoc2coco(boxes: torch.Tensor) -> torch.Tensor:
     """[x_min, y_min, x_max, y_max] -> [x_min, y_min, width, height]"""
     boxes[:, 2:] = boxes[:, 2:] - boxes[:, :2]
     return boxes
