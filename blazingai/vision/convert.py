@@ -1,9 +1,9 @@
 from functools import partial
+from pydicom import filereader
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 import numpy as np
-import pydicom
 from joblib import delayed, Parallel
 from loguru import logger
 from PIL import Image
@@ -46,7 +46,9 @@ def _parallel_by_file(in_path: Path, out_path: Path) -> None:
 
 
 def _convert_one_dicom_img(img_path: Path, in_path: Path, out_path: Path) -> None:
-    img_array = dicom_to_numpy(img_path=img_path, voi_lut=True, fix_monochrome=True)
+    img_array = convert_dicom2numpy(
+        img_path=img_path, voi_lut=True, fix_monochrome=True
+    )
     img = Image.fromarray(img_array)
 
     fpath = Path(
@@ -59,11 +61,14 @@ def _convert_one_dicom_img(img_path: Path, in_path: Path, out_path: Path) -> Non
     img.save(fpath)
 
 
-def dicom_to_numpy(
+def convert_dicom2numpy(
     img_path: Path, voi_lut: bool = True, fix_monochrome: bool = True
-) -> np.ndarray:
+) -> Union[np.ndarray, ValueError]:
     # credits: https://www.kaggle.com/raddar/convert-dicom-to-np-array-the-correct-way
-    dicom = pydicom.read_file(img_path)
+    try:
+        dicom = filereader.read_file(img_path)
+    except ValueError as e:
+        return e
 
     # VOI LUT (if available by DICOM device) is used to transform
     # raw DICOM data to "human-friendly" view
