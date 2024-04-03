@@ -1,5 +1,4 @@
 from functools import partial
-from pydicom import filereader
 from pathlib import Path
 from typing import List, Union
 
@@ -7,6 +6,7 @@ import numpy as np
 from joblib import delayed, Parallel
 from loguru import logger
 from PIL import Image
+from pydicom import filereader
 from pydicom.pixel_data_handlers.util import apply_voi_lut
 from tqdm import tqdm
 
@@ -49,7 +49,7 @@ def _convert_one_dicom_img(img_path: Path, in_path: Path, out_path: Path) -> Non
     img_array = convert_dicom2numpy(
         img_path=img_path, voi_lut=True, fix_monochrome=True
     )
-    img = Image.fromarray(img_array)
+    img = Image.fromarray(img_array)  # type: ignore
 
     fpath = Path(
         str(img_path).replace(str(in_path), str(out_path)).replace("dcm", "jpg")

@@ -50,3 +50,8 @@ norecursedirs = [
   "dist",
 ]
 markers = ["slow"]
+
+[tool.ruff]
+extend-include = ["*.ipynb"]
+lint.extend-select = ["I"]
+lint.extend-ignore = ["E741"]
