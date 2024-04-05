@@ -5,7 +5,7 @@ import numpy as np
 from joblib import Parallel, delayed
 from loguru import logger
 from PIL import Image
-from pydicom import filereader
+from pydicom import dcmread
 from pydicom.pixel_data_handlers.util import apply_voi_lut
 from tqdm import tqdm
 
@@ -65,7 +65,7 @@ def convert_dicom2numpy(
 ) -> np.ndarray | ValueError:
     # credits: https://www.kaggle.com/raddar/convert-dicom-to-np-array-the-correct-way
     try:
-        dicom = filereader.read_file(img_path)
+        dicom = dcmread(img_path)
     except ValueError as e:
         return e
 
