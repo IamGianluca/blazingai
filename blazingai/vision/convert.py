@@ -1,6 +1,5 @@
 from functools import partial
 from pathlib import Path
-from typing import List, Union
 
 import numpy as np
 from joblib import delayed, Parallel
@@ -20,7 +19,7 @@ def convert_dicom2jpg(in_path: Path, out_path: Path) -> None:
         _parallel_by_file(in_path=in_path, out_path=out_path)
 
 
-def _parallel_by_dir(dirs: List, in_path: Path, out_path: Path) -> None:
+def _parallel_by_dir(dirs: list, in_path: Path, out_path: Path) -> None:
     f = partial(_convert_one_dir, in_path=in_path, out_path=out_path)
     Parallel(n_jobs=-1, prefer="threads")(
         delayed(f)(d) for d in tqdm(dirs, desc="Processing folders")
@@ -63,7 +62,7 @@ def _convert_one_dicom_img(img_path: Path, in_path: Path, out_path: Path) -> Non
 
 def convert_dicom2numpy(
     img_path: Path, voi_lut: bool = True, fix_monochrome: bool = True
-) -> Union[np.ndarray, ValueError]:
+) -> np.ndarray | ValueError:
     # credits: https://www.kaggle.com/raddar/convert-dicom-to-np-array-the-correct-way
     try:
         dicom = filereader.read_file(img_path)

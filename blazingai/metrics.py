@@ -1,5 +1,3 @@
-from typing import List
-
 import numpy as np
 import torch
 import torchmetrics
@@ -58,10 +56,10 @@ class CrossValMetricsTracker:
     def __init__(self, cfg: DictConfig) -> None:
         self.cfg = cfg
         self.metric = cfg.metric
-        self._trgt: List[torch.Tensor] = []
-        self._pred: List[torch.Tensor] = []
-        self._val_scores: List[torch.Tensor] = []
-        self._trn_scores: List[torch.Tensor] = []
+        self._trgt: list[torch.Tensor] = []
+        self._pred: list[torch.Tensor] = []
+        self._val_scores: list[torch.Tensor] = []
+        self._trn_scores: list[torch.Tensor] = []
 
     @property
     def trn_metric(self):
@@ -79,8 +77,8 @@ class CrossValMetricsTracker:
 
     def add(
         self,
-        trgt: List[torch.Tensor],  # y_true test set
-        pred: List[torch.Tensor],  # y_pred test set
+        trgt: list[torch.Tensor],  # y_true test set
+        pred: list[torch.Tensor],  # y_pred test set
         val_score: torch.Tensor,
         trn_score: torch.Tensor,
     ):

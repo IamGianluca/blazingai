@@ -1,7 +1,7 @@
 import os
 import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 import lightning as pl
 
@@ -20,9 +20,9 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 class ImageClassificationDataset(Dataset):
     def __init__(
         self,
-        img_paths: List[Path],
+        img_paths: list[Path],
         aug: Compose,
-        trgt: Optional[List] = None,
+        trgt: Optional[list] = None,
     ) -> None:
         self.img_paths = img_paths
         self.trgt = trgt
@@ -45,9 +45,9 @@ class ImageClassificationDataset(Dataset):
 class Image3DClassificationDataset(Dataset):
     def __init__(
         self,
-        img_paths: List[Path],
+        img_paths: list[Path],
         aug: Compose,
-        trgt: Optional[List] = None,
+        trgt: Optional[list] = None,
     ) -> None:
         self.img_paths = img_paths
         self.trgt = trgt
@@ -97,9 +97,9 @@ def spline_interpolated_zoom(img, desired_depth: int = 3):
 class ObjectDetectionDataset(Dataset):
     def __init__(
         self,
-        img_paths: List[Path],
+        img_paths: list[Path],
         aug: Compose,
-        trgt: Optional[List[Dict[str, Any]]] = None,
+        trgt: Optional[list[dict[str, Any]]] = None,
     ) -> None:
         self.img_paths = img_paths
         self.trgt = trgt
@@ -148,11 +148,11 @@ class ImageDataModule(pl.LightningDataModule):
         self,
         task: str,
         bs: int,
-        trn_img_paths: Optional[List[Path]] = None,
-        val_img_paths: Optional[List[Path]] = None,
-        tst_img_paths: Optional[List[Path]] = None,
-        trn_trgt: Optional[List] = None,
-        val_trgt: Optional[List] = None,
+        trn_img_paths: Optional[list[Path]] = None,
+        val_img_paths: Optional[list[Path]] = None,
+        tst_img_paths: Optional[list[Path]] = None,
+        trn_trgt: Optional[list] = None,
+        val_trgt: Optional[list] = None,
         trn_aug: Optional[Compose] = None,
         val_aug: Optional[Compose] = None,
         tst_aug: Optional[Compose] = None,

@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 import lightning as pl
 import pandas as pd
@@ -15,7 +15,7 @@ class TextDataModule(pl.LightningDataModule):
     def __init__(
         self,
         model_name_or_path: str,
-        trgt_cols: List[str],
+        trgt_cols: list[str],
         fold: int,
         data_path: Path,
         bs: int,

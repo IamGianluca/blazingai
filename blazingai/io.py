@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-from typing import List
 
 import numpy as np
 import torch
@@ -8,7 +7,7 @@ import torch
 from blazingai.metrics import CrossValMetricsTracker
 
 
-def save_pred(fpath: Path, pred: List[torch.Tensor]) -> None:
+def save_pred(fpath: Path, pred: list[torch.Tensor]) -> None:
     pred_arr = torch.vstack(pred).to(torch.float32)
     np.save(fpath, pred_arr)
 

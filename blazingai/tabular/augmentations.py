@@ -1,12 +1,10 @@
-from typing import List
-
 import numpy as np
 import pandas as pd
 
 
 def extract_datetime_features(
     df: pd.DataFrame,
-    col_names: List[str],
+    col_names: list[str],
     is_datetime: bool = True,
     drop_original_cols: bool = False,
 ) -> pd.DataFrame:
@@ -60,7 +58,7 @@ def extract_datetime_features(
 
 def get_cyclical_features(
     df: pd.DataFrame,
-    col_names: List[str],
+    col_names: list[str],
     scaling_factor: int,
     drop_original_cols: bool = False,
 ) -> pd.DataFrame:

@@ -1,6 +1,5 @@
 from pathlib import Path
 from types import ModuleType
-from typing import List, Tuple
 
 import lightning as pl
 import numpy as np
@@ -66,7 +65,7 @@ def is_crossval(cfg: DictConfig) -> bool:
 
 def image_classification_recipe(
     cfg: DictConfig, logger: Logger, const: ModuleType, utils: ModuleType
-) -> Tuple[np.ndarray, np.ndarray, torch.Tensor, torch.Tensor]:
+) -> tuple[np.ndarray, np.ndarray, torch.Tensor, torch.Tensor]:
     df = pd.read_csv(const.train_folds_all_fpath)
     df_trn = df[df.kfold != cfg.fold].reset_index()
     df_val = df[df.kfold == cfg.fold].reset_index()
@@ -100,7 +99,7 @@ def image_classification_recipe(
 
     model = learner.ImageClassifier(cfg=cfg)
 
-    cbacks: List[Callback] = list()
+    cbacks: list[Callback] = list()
     checkpoint_callback = callbacks.ModelCheckpoint(
         monitor="val_metric",
         mode=cfg.metric_mode,
@@ -161,7 +160,7 @@ def log_mtrc(logger: Logger, metrics: CrossValMetricsTracker) -> None:
 
 def text_classification_recipe(
     cfg: DictConfig, const: ModuleType, logger: Logger
-) -> Tuple[np.ndarray, np.ndarray, torch.Tensor, torch.Tensor]:
+) -> tuple[np.ndarray, np.ndarray, torch.Tensor, torch.Tensor]:
     data = TextDataModule(
         model_name_or_path=cfg.model_name,
         data_path=const.train_folds_fpath,
@@ -172,7 +171,7 @@ def text_classification_recipe(
     )
     model = TextClassifier(cfg=cfg)
 
-    cbacks: List[Callback] = list()
+    cbacks: list[Callback] = list()
     checkpoint_callback = callbacks.ModelCheckpoint(
         monitor="val_metric",
         mode=cfg.metric_mode,

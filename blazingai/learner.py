@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 import lightning as pl
 import timm
@@ -77,7 +77,7 @@ class ImageClassifier(pl.LightningModule):
         self.val_metric.update(preds=preds, target=target)
         return loss
 
-    def validation_epoch_end(self, outputs: List):
+    def validation_epoch_end(self, outputs: list):
         self.log("val_metric", self.val_metric.compute())
         self._register_best_train_and_val_metrics()
 
@@ -233,7 +233,7 @@ class TextClassifier(pl.LightningModule):
         loss = loss_fn(preds, target)
         return loss
 
-    def validation_epoch_end(self, outputs: List):
+    def validation_epoch_end(self, outputs: list):
         self.log("val_metric", self.val_metric.compute())
         self._register_best_train_and_val_metrics()
 

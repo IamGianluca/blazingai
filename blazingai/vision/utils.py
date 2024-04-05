@@ -1,5 +1,5 @@
 import copy
-from typing import List, Tuple, Union
+from typing import Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -25,7 +25,7 @@ def plot_batches(dl: DataLoader, n_batches: int = 1):
 
 
 def _show_images_in_batch(
-    batch: Union[Tuple[torch.Tensor, List], torch.Tensor],
+    batch: Union[tuple[torch.Tensor, list], torch.Tensor],
     verbose: bool = False,
 ):
     try:
@@ -48,7 +48,7 @@ def plot_batches_detection(dl: DataLoader, n_batches: int = 1, preds=None):
     'boxes' and 'labels').
     """
     images_with_bboxes = []
-    titles: List[str] = []
+    titles: list[str] = []
     true_labels = []
     pred_labels = []
 

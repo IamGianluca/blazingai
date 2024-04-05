@@ -1,4 +1,4 @@
-from typing import Dict, Generator, List, Optional
+from typing import Generator, Optional
 
 import numpy as np
 import pandas as pd
@@ -42,8 +42,8 @@ class TimeSeriesSplit(_BaseKFold):
         self.sliding_steps = sliding_steps
         self.n_splits = n_splits
         self.date_col_name = date_col_name
-        self.train_date_ranges: Dict[str, List[str]] = {}
-        self.validation_date_ranges: Dict[str, List[str]] = {}
+        self.train_date_ranges: dict[str, list[str]] = {}
+        self.validation_date_ranges: dict[str, list[str]] = {}
 
     @staticmethod
     def validate_method(method):
@@ -99,7 +99,7 @@ class TimeSeriesSplit(_BaseKFold):
             ]
             yield (np.where(train_mask)[0], np.where(valid_mask)[0])
 
-    def _get_dates(self, first: pd.Timestamp, step: int) -> List[pd.Timestamp]:
+    def _get_dates(self, first: pd.Timestamp, step: int) -> list[pd.Timestamp]:
         """Gets the train start, train end, valid start and valid end dates
         Args:
             first: start date of first training set.

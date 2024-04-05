@@ -1,20 +1,20 @@
 import json
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy as np
 import pandas as pd
 import torch
 
-JsonDict = Dict[str, Any]
+JsonDict = dict[str, Any]
 
 
-def boxes_str2array(bboxes_str: List[str]) -> List:
+def boxes_str2array(bboxes_str: list[str]) -> list:
     boxes_json = _boxes_str2json(bboxes_str)
     boxes_array = _boxes_json2array(boxes_json)
     return boxes_array
 
 
-def _boxes_str2json(bboxes_str: List[str]) -> List[JsonDict]:
+def _boxes_str2json(bboxes_str: list[str]) -> list[JsonDict]:
     result = [
         json.loads(idx.replace("'", '"')) if idx is not np.nan else np.nan
         for idx in bboxes_str
@@ -23,8 +23,8 @@ def _boxes_str2json(bboxes_str: List[str]) -> List[JsonDict]:
 
 
 def _boxes_json2array(
-    bboxes_json: List[JsonDict], fillna: List = [[0, 0, 1, 1]]
-) -> List:
+    bboxes_json: list[JsonDict], fillna: list = [[0, 0, 1, 1]]
+) -> list:
     result = []
     for target in bboxes_json:
         if target is not np.nan:
