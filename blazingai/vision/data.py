@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Any, Optional
 
 import lightning as pl
-
 import numpy as np
 import torch
 from PIL import Image, ImageFile

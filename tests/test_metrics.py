@@ -1,9 +1,9 @@
 import pytest
 import torch
-from blazingai.metrics import CrossValMetricsTracker, MeanColumnwiseRootMeanSquaredError
 from omegaconf import DictConfig
-
 from torchmetrics.regression.mse import MeanSquaredError
+
+from blazingai.metrics import CrossValMetricsTracker, MeanColumnwiseRootMeanSquaredError
 
 
 def test_oof_metric():

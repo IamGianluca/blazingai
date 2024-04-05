@@ -2,7 +2,7 @@ from functools import partial
 from pathlib import Path
 
 import numpy as np
-from joblib import delayed, Parallel
+from joblib import Parallel, delayed
 from loguru import logger
 from PIL import Image
 from pydicom import filereader

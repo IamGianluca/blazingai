@@ -1,8 +1,9 @@
 from pathlib import Path
 
 import pytest
-from blazingai.vision.convert import convert_dicom2jpg
 from pydicom import dcmread
+
+from blazingai.vision.convert import convert_dicom2jpg
 
 
 @pytest.fixture(scope="session")

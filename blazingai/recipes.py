@@ -5,6 +5,12 @@ import lightning as pl
 import numpy as np
 import pandas as pd
 import torch
+from lightning.pytorch import callbacks
+from lightning.pytorch.callbacks import RichProgressBar
+from lightning.pytorch.callbacks.callback import Callback
+from lightning.pytorch.loggers import Logger
+from omegaconf import DictConfig, OmegaConf
+from timm.data import transforms_factory
 
 from blazingai import learner
 from blazingai.io import print_mtrc, save_mtrc, save_pred
@@ -12,14 +18,6 @@ from blazingai.learner import TextClassifier
 from blazingai.metrics import CrossValMetricsTracker
 from blazingai.text.data import TextDataModule
 from blazingai.vision.data import ImageDataModule
-
-from lightning.pytorch import callbacks
-from lightning.pytorch.callbacks import RichProgressBar
-
-from lightning.pytorch.callbacks.callback import Callback
-from lightning.pytorch.loggers import Logger
-from omegaconf import DictConfig, OmegaConf
-from timm.data import transforms_factory
 
 
 # TODO: use protocol instead of ModuleType so that we can use a fake module when
