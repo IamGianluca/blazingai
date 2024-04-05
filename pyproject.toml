@@ -31,7 +31,6 @@ dev = [
   "pytest-cov",
   "ipdb",
   "mypy",
-  "usort",
   "pynvim", # required for nvim lsp
 ]
 medical = [
