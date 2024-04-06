@@ -1,5 +1,6 @@
 from functools import partial
 from pathlib import Path
+from typing import Union
 
 import numpy as np
 from joblib import Parallel, delayed
@@ -62,7 +63,7 @@ def _convert_one_dicom_img(img_path: Path, in_path: Path, out_path: Path) -> Non
 
 def convert_dicom2numpy(
     img_path: Path, voi_lut: bool = True, fix_monochrome: bool = True
-) -> np.ndarray | ValueError:
+) -> Union[np.ndarray, ValueError]:
     # credits: https://www.kaggle.com/raddar/convert-dicom-to-np-array-the-correct-way
     try:
         dicom = dcmread(img_path)
