@@ -39,7 +39,7 @@ def _parallel_by_file(in_path: Path, out_path: Path) -> None:
     )
 
     f = partial(_convert_one_dicom_img, in_path=in_path, out_path=out_path)
-    Parallel(n_jobs=-1)(
+    Parallel(n_jobs=-1, backend="multiprocessing")(
         delayed(f)(p) for p in tqdm(img_paths, desc="Processing Images")
     )
 
