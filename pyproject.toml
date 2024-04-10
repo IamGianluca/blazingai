@@ -55,6 +55,3 @@ markers = ["slow"]
 extend-include = ["*.ipynb"]
 lint.extend-select = ["I"]
 lint.extend-ignore = ["E741"]
-
-[tool.basedpyright]
-typeCheckingMode = "standard"
